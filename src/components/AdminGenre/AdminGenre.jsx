@@ -37,8 +37,6 @@ const AdminGenre = () => {
 
   const mutationUpdate = useMutation({
     mutationFn: (data) => {
-      console.log(data);
-      
       return GenreService.updateGenre(data, user?.access_token)
     },
     onSuccess: () => {

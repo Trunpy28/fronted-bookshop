@@ -48,7 +48,6 @@ const HomePage = () => {
       <Loading isLoading={isLoadingGenres}>
         {(genresData?.data || []).map((genre, index) => {
           const productsResult = genreProductsResults[index];
-          console.log(productsResult);
           
           const products = productsResult?.data?.data || [];
           const isLoadingProducts = productsResult?.isLoading;

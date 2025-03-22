@@ -112,7 +112,7 @@ const AdminProduct = () => {
       if (res?.data) {
         updateForm.setFieldsValue({
           name: res.data.name,
-          genre: res.data.genre,
+          genre: res.data.genre?._id,
           description: res.data.description,
           author: res.data.author,
           publisher: res.data.publisher,
@@ -165,12 +165,7 @@ const AdminProduct = () => {
     
     Object.keys(values).forEach(key => {
       if (key !== 'images') {
-        if (key === 'originalPrice') {
-          const priceValue = values[key] ? parseFloat(values[key].toString().replace(/,/g, '')) : 0;
-          formData.append(key, priceValue);
-        } else {
-          formData.append(key, values[key]);
-        }
+        formData.append(key, values[key]);
       }
     });
     
@@ -190,12 +185,7 @@ const AdminProduct = () => {
     
     Object.keys(values).forEach(key => {
       if (key !== 'images') {
-        if (key === 'originalPrice') {
-          const priceValue = values[key] ? parseFloat(values[key].toString().replace(/,/g, '')) : 0;
-          formData.append(key, priceValue);
-        } else {
-          formData.append(key, values[key]);
-        }
+        formData.append(key, values[key]);
       }
     });
     
