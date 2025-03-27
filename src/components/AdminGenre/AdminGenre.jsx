@@ -19,7 +19,7 @@ const AdminGenre = () => {
   const user = useSelector((state) => state.user);
 
   const { data: genres, refetch, isLoading: isLoadingGenres } = useQuery({
-    queryKey: ["genres-admin"],
+    queryKey: ["admin-genres"],
     queryFn: () => GenreService.getAllGenres(),
   });
 

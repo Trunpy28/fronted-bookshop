@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button, Card, Col, Form, Input, Row, Space, Statistic, Table, Modal, InputNumber, Select, Image } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as InventoryService from "../../services/InventoryService";
 import * as ProductService from "../../services/ProductService";
@@ -14,11 +14,9 @@ import { timeTranform, convertPrice } from "../../utils";
 
 const AdminInventory = () => {
   const [isModalAddOpen, setIsModalAddOpen] = useState(false);
-  const [isModalEditOpen, setIsModalEditOpen] = useState(false);
   const [isModalOpenDelete, setIsModalOpenDelete] = useState(false);
   const [selectedInventory, setSelectedInventory] = useState(null);
   const [formAdd] = Form.useForm();
-  const [formEdit] = Form.useForm();
   const user = useSelector((state) => state.user);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -27,22 +25,22 @@ const AdminInventory = () => {
   
   // Queries
   const queryInventories = useQuery({
-    queryKey: ["inventories", currentPage, pageSize],
+    queryKey: ["admin-inventories", currentPage, pageSize],
     queryFn: () => InventoryService.getInventoriesPaginated(currentPage, pageSize, user?.access_token),
-    enabled: !!user?.access_token,
+    enabled: !!user?.access_token && user?.isAdmin && !!currentPage && !!pageSize,
     keepPreviousData: true,
   });
 
   const { data: products, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["products-select"],
     queryFn: () => ProductService.getAllProductsForSelect(),
-    enabled: !!user?.access_token,
+    enabled: !!user?.access_token && user?.isAdmin,
   });
 
   const { data: batches, isLoading: isLoadingBatches } = useQuery({
     queryKey: ["batches-select"],
     queryFn: () => BatchService.getAllBatches(user?.access_token),
-    enabled: !!user?.access_token,
+    enabled: !!user?.access_token && user?.isAdmin,
   });
 
   // Cập nhật productOptions khi products thay đổi
@@ -90,24 +88,13 @@ const AdminInventory = () => {
     },
   });
 
-  const mutationUpdate = useMutation({
-    mutationFn: ({ id, data }) => InventoryService.updateInventory(id, data, user?.access_token),
-    onSuccess: () => {
-      message.success("Cập nhật kho hàng thành công");
-      queryInventories.refetch();
-      setIsModalEditOpen(false);
-      formEdit.resetFields();
-      setSelectedInventory(null);
-    },
-    onError: (error) => {
-      message.error(error.message || "Cập nhật kho hàng thất bại");
-    },
-  });
-
   const mutationDelete = useMutation({
     mutationFn: (id) => InventoryService.deleteInventory(id, user?.access_token),
     onSuccess: () => {
       message.success("Xóa kho hàng thành công");
+      if (currentPage > 1 && queryInventories.data?.inventories?.length === 1) {
+        setCurrentPage(currentPage - 1);
+      }
       queryInventories.refetch();
       setIsModalOpenDelete(false);
     },
@@ -125,35 +112,14 @@ const AdminInventory = () => {
     }
   };
 
-  const handleUpdateInventory = async () => {
-    try {
-      const values = await formEdit.validateFields();
-      if (selectedInventory) {
-        mutationUpdate.mutate({ id: selectedInventory._id, data: values });
-      }
-    } catch (error) {
-      console.error("Lỗi validation:", error);
-    }
-  };
-
-  const handleEditInventory = (record) => {
-    setSelectedInventory(record);
-    formEdit.setFieldsValue({
-      product: record.product?._id,
-      batch: record.batch?._id,
-      quantity: record.quantity
-    });
-    setIsModalEditOpen(true);
-  };
-
   const handleConfirmDelete = (inventory) => {
     setSelectedInventory(inventory);
     setIsModalOpenDelete(true);
   };
 
-  const handleTableChange = (pagination) => {
-    setCurrentPage(pagination.current);
-    setPageSize(pagination.pageSize);
+  const handleTableChange = (page, pageSize) => {
+    setCurrentPage(page);
+    setPageSize(pageSize);
   };
 
   const columns = [
@@ -180,7 +146,6 @@ const AdminInventory = () => {
       title: "Thao tác",
       render: (text, record) => (
         <Space size="middle">
-          <EditOutlined style={{ color: "orange", fontSize: "25px", cursor: "pointer" }} onClick={() => handleEditInventory(record)} />
           <DeleteOutlined style={{ color: "red", fontSize: "25px", cursor: "pointer" }} onClick={() => handleConfirmDelete(record)} />
         </Space>
       ),
@@ -209,7 +174,7 @@ const AdminInventory = () => {
 }
   
   return (
-    <Loading isLoading={mutationCreate.isPending || mutationUpdate.isPending || mutationDelete.isPending || queryInventories.isLoading}>
+    <Loading isLoading={mutationCreate.isPending || mutationDelete.isPending || queryInventories.isLoading}>
       <div>
         <WrapperHeader>Quản lý kho hàng</WrapperHeader>
         <div style={{ marginTop: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -246,6 +211,8 @@ const AdminInventory = () => {
               pageSize: pageSize,
               total: queryInventories.data?.total,
               onChange: handleTableChange,
+              pageSizeOptions: [2,10, 20, 50, 100],
+              showSizeChanger: true,
             }}
           />
         </div>
@@ -288,56 +255,10 @@ const AdminInventory = () => {
                 loading={isLoadingBatches}
                 placeholder="Chọn lô hàng"
                 options={batchOptions}
-              />
-            </Form.Item>
-            <Form.Item
-              label="Số lượng"
-              name="quantity"
-              rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
-            >
-              <InputNumber min={0} style={{ width: '100%' }} />
-            </Form.Item>
-          </Form>
-        </Modal>
-
-        {/* Modal chỉnh sửa kho hàng */}
-        <Modal
-          title="Cập nhật kho hàng"
-          open={isModalEditOpen}
-          onCancel={() => setIsModalEditOpen(false)}
-          onOk={handleUpdateInventory}
-          confirmLoading={mutationUpdate.isPending}
-          width={700}
-        >
-          <Form form={formEdit} layout="vertical">
-            <Form.Item
-              label="Sản phẩm"
-              name="product"
-              rules={[{ required: true, message: "Vui lòng chọn sản phẩm!" }]}
-            >
-              <Select
-                loading={isLoadingProducts}
-                placeholder="Chọn sản phẩm"
-                options={productOptions}
-                optionRender={renderProductOption}
                 showSearch
                 filterOption={(input, option) =>
                   option.label.toLowerCase().indexOf(input.toLowerCase()) >= 0
                 }
-                listHeight={500}
-                style={{ width: '100%' }}
-                dropdownStyle={{ minWidth: '550px' }}
-              />
-            </Form.Item>
-            <Form.Item
-              label="Lô hàng"
-              name="batch"
-              rules={[{ required: true, message: "Vui lòng chọn lô hàng!" }]}
-            >
-              <Select
-                loading={isLoadingBatches}
-                placeholder="Chọn lô hàng"
-                options={batchOptions}
               />
             </Form.Item>
             <Form.Item

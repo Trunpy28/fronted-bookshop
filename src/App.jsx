@@ -9,23 +9,13 @@ import * as UserService from "./services/UserService";
 import { useDispatch, useSelector } from "react-redux";
 import { updateUser } from "./redux/slices/userSlice";
 import Loading from "./components/LoadingComponent/Loading";
+import * as CartService from "./services/CartService";
+import { setCart } from "./redux/slices/cartSlice";
 
 function App() {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
   const user = useSelector((state) => state.user);
-
-  // Lấy thông tin user
-  const handleGetDetailsUser = async (id, token) => {
-    try {
-      const res = await UserService.getDetailsUser(id, token);
-      dispatch(updateUser({ ...res?.data, access_token: token }));
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Xử lý access token nằm trong localStorage
   const handleDecoded = () => {
@@ -38,14 +28,35 @@ function App() {
     return { decoded, storageData };
   };
 
-  // Chạy 1 lần để lấy thông tin user
-  useEffect(() => {
-    const { storageData, decoded } = handleDecoded();
-    if (decoded?.id) {
-      handleGetDetailsUser(decoded.id, storageData);
-    } else {
-      setIsLoading(false);
+  // Lấy thông tin user
+  const handleGetDetailsUser = async (id, token) => {
+    try {
+      const res = await UserService.getDetailsUser(id, token);
+      dispatch(updateUser({ ...res?.data, access_token: token }));
+
+    } catch (e) {
+      console.log(e);
     }
+  };
+
+  const handleGetMyCart = async (userId, token) => {
+    try {
+      const res = await CartService.getCartByUser(token);
+      dispatch(setCart(res?.data));
+    }
+    catch (e) {
+      console.log(e);
+    }
+  }
+
+  // Chạy 1 lần để lấy thông tin user và giỏ hàng
+  useEffect(() => {
+    const { storageData: accessToken, decoded } = handleDecoded();
+    if (decoded?.id) {
+      handleGetDetailsUser(decoded.id, accessToken);
+      handleGetMyCart(decoded.id, accessToken);
+    }
+    setIsLoading(false);
   }, []);
 
   // Kiểm tra access_token hết hạn trước khi thực thi request, đặt access token mới vào config

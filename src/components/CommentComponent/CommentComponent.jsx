@@ -1,11 +1,9 @@
 import React from 'react'
 
-const CommentComponent = (props) => {
-  const {dataHref, width} = props
+const CommentComponent = () => {
   return (
-    <div style={{padding: '20px 20px', backgroundColor: 'white',marginTop: '20px'}}>
-      <div className="fb-comments" data-href={dataHref} data-width={width} data-numposts="5"></div>
-
+    <div>
+      <h1>Comment Component</h1>
     </div>
   )
 }

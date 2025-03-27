@@ -29,7 +29,7 @@ const { Search } = Input;
 const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.user);
-  const order = useSelector((state) => state.order);
+  const cart = useSelector((state) => state.cart);
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [userName, setUserName] = useState("");
@@ -164,10 +164,10 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
           {!isHiddenCart && (
             <WrapperHeaderButton
               onClick={() => {
-                navigate("/order");
+                navigate("/cart");
               }}
             >
-              <Badge count={order?.orderItems?.length} size="medium">
+              <Badge count={cart?.cartItems?.length} size="medium">
                 <ShoppingCartOutlined
                   style={{
                     fontSize: "36px",

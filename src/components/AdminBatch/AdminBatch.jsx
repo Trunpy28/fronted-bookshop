@@ -29,7 +29,7 @@ const AdminBatch = () => {
   const queryBatches = useQuery({
     queryKey: ["batches", currentPage, pageSize],
     queryFn: () => BatchService.getBatchesPaginated(currentPage, pageSize, user?.access_token),
-    enabled: !!user?.access_token && user?.isAdmin,
+    enabled: !!user?.access_token && user?.isAdmin && !!currentPage && !!pageSize,
     keepPreviousData: true,
   });
 
@@ -80,6 +80,9 @@ const AdminBatch = () => {
     mutationFn: (id) => BatchService.deleteBatch(id, user?.access_token),
     onSuccess: () => {
       message.success("Xóa lô hàng thành công");
+      if (currentPage > 1 && queryBatches.data?.batches?.length === 1) {
+        setCurrentPage(currentPage - 1);
+      }
       queryBatches.refetch();
       setIsModalOpenDelete(false);
     },
@@ -124,9 +127,9 @@ const AdminBatch = () => {
     setIsModalOpenDelete(true);
   };
 
-  const handleTableChange = (pagination) => {
-    setCurrentPage(pagination.current);
-    setPageSize(pagination.pageSize);
+  const handleTableChange = (page, pageSize) => {
+    setCurrentPage(page);
+    setPageSize(pageSize);
   };
 
   const columns = [

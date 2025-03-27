@@ -9,7 +9,7 @@ import locale from 'antd/es/date-picker/locale/vi_VN';
 import * as VoucherService from '../../services/VoucherService';
 import { WrapperHeader } from '../AdminProduct/style';
 import Loading from '../LoadingComponent/Loading';
-import { formatDate } from '../../utils';
+import { timeTranform } from '../../utils';
 import TableComponent from '../TableComponent/TableComponent';
 
 const { Option } = Select;
@@ -184,13 +184,13 @@ const AdminVoucher = () => {
       title: 'Ngày bắt đầu',
       dataIndex: 'startDate',
       key: 'startDate',
-      render: (date) => formatDate(date),
+      render: (date) => timeTranform(date),
     },
     {
       title: 'Ngày kết thúc',
       dataIndex: 'endDate',
       key: 'endDate',
-      render: (date) => formatDate(date),
+      render: (date) => timeTranform(date),
     },
     {
       title: 'Trạng thái',

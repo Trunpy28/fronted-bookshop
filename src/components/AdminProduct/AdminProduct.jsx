@@ -54,8 +54,8 @@ const AdminProduct = () => {
       handleCancel();
       queryProduct.refetch();
     },
-    onError: () => {
-      message.error("Thêm sản phẩm thất bại");
+    onError: (error) => {
+      message.error(error.response.data.message);
     }
   });
 
@@ -69,8 +69,8 @@ const AdminProduct = () => {
       handleCloseDrawer();
       queryProduct.refetch();
     },
-    onError: () => {
-      message.error("Cập nhật sản phẩm thất bại");
+    onError: (error) => {
+      message.error(error.response.data.message);
     }
   });
 
@@ -84,8 +84,8 @@ const AdminProduct = () => {
       handleCancelDelete();
       queryProduct.refetch();
     },
-    onError: () => {
-      message.error("Xóa sản phẩm thất bại");
+    onError: (error) => {
+      message.error(error.response.data.message);
     }
   });
 
@@ -111,6 +111,7 @@ const AdminProduct = () => {
       const res = await ProductService.getDetailsProduct(id);
       if (res?.data) {
         updateForm.setFieldsValue({
+          productCode: res.data.productCode,
           name: res.data.name,
           genre: res.data.genre?._id,
           description: res.data.description,
@@ -211,6 +212,10 @@ const AdminProduct = () => {
   const { data: genres } = queryGenres;
 
   const columns = [
+    {
+      title: "Mã hàng",
+      dataIndex: "productCode"
+    },
     {
       title: "Tên sách",
       dataIndex: "name",
@@ -354,6 +359,13 @@ const AdminProduct = () => {
             onFinishFailed={onFinishFailed}
             autoComplete="on"
           >
+            <Form.Item
+              label="Mã hàng"
+              name="productCode"
+              rules={[{ required: true, message: "Vui lòng nhập mã hàng!" }]}
+            >
+              <InputComponent name="productCode" />
+            </Form.Item>
             <Form.Item
               label="Tên sách"
               name="name"
@@ -516,6 +528,13 @@ const AdminProduct = () => {
             onFinish={onFinishUpdate}
             autoComplete="on"
           >
+            <Form.Item
+              label="Mã hàng"
+              name="productCode"
+              rules={[{ required: true, message: "Vui lòng nhập mã hàng!" }]}
+            >
+              <InputComponent name="productCode" />
+            </Form.Item>
             <Form.Item
               label="Tên sách"
               name="name"

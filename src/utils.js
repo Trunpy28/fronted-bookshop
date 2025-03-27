@@ -13,24 +13,7 @@ export const getBase64 = (file) =>
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result);
     reader.onerror = (error) => reject(error);
-  });
-
-export const renderOptions = (arr) => {
-  let results = [];
-  if(arr) {
-    results = arr?.map((opt) => {
-      return {
-        value: opt,
-        label: opt,
-      }
-    })
-  }
-  results.push({
-    value: 'Thêm type',
-    label: 'Thêm loại sản phẩm',
-  })
-  return results;
-}
+});
 
 export const convertPrice = (price) => {
   try {

@@ -1,36 +1,33 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { DownOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import { Dropdown, ConfigProvider, Space } from "antd";
 import { LinkNavBar, TypeProductWrapper } from "./style";
 import { useNavigate } from "react-router-dom";
-import * as ProductService from "../../services/ProductService";
-
-
+import * as GenreService from "../../services/GenreService";
+import { useQuery } from "@tanstack/react-query";
+import Loading from "../LoadingComponent/Loading";
 const HeaderNavBar = () => {
   const navigate = useNavigate();
-  const [typeProducts, setTypeProducts] = useState([])
-  const fetchAllTypeProduct = async () => {
-    const  res = await ProductService.getAllTypeProduct();
-    if(res?.status === 'OK') {
-      setTypeProducts(res?.data);
-    }
-  }
-  useEffect(() => {
-    fetchAllTypeProduct();
-  },[])
+  
+  const { data: genresData, isPending } = useQuery({
+    queryKey: ['genres'],
+    queryFn: GenreService.getAllGenres,
+    staleTime: 1000 * 60 * 5,
+  });
 
-  const productTypes = typeProducts.map((value) => {
+  const genres = genresData?.data || [];
+
+  const genreItems = genres.map((genre) => {
     return {
-      key: value,
-      label: value,
-      onClick: (e) => {
-        navigate(`/product/${value.normalize('NFD').replace(/[\u0300-\u036f]/g, '')?.replace(/ /g, '_')}`,{state: value});
+      key: genre._id,
+      label: <span style={{ paddingLeft: '20px' }}>{genre.name}</span>,
+      onClick: () => {
+        navigate(`/product/genre/${genre._id}`, { state: genre.name });
       },
     }
   })
   
   return (
-    <div>
       <TypeProductWrapper>
         <ConfigProvider
           theme={{
@@ -40,15 +37,13 @@ const HeaderNavBar = () => {
               lineHeight: "40px",
               marginXXS: "0px 20px",
               fontWeightStrong: "bold",
-              paddingXXS: "10px 0px 0px 20px",
-              controlItemBgHover: "#20C77C",
+              controlItemBgHover: "lightgreen",
             },
           }}
         >
           <Dropdown
             menu={{
-              items: productTypes,
-              // onClick: handleDropdownItemClick,
+              items: genreItems,
             }}
           >
             <LinkNavBar onClick={(e) => e.preventDefault()}>
@@ -76,7 +71,6 @@ const HeaderNavBar = () => {
           </LinkNavBar>
         </ConfigProvider>
       </TypeProductWrapper>
-    </div>
   );
 };
 
