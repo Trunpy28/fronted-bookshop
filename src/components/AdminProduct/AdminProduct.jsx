@@ -443,12 +443,10 @@ const AdminProduct = () => {
                 showUploadList={{ showError: false }}
                 onError={() => {}}
               >
-                {(fileList?.length || 0) < 5 && 
-                  <div>
-                    <PlusOutlined />
-                    <div style={{ marginTop: 8 }}>Chọn ảnh</div>
-                  </div>
-                }
+                <div>
+                  <PlusOutlined />
+                  <div style={{ marginTop: 8 }}>Chọn ảnh</div>
+                </div>
               </Upload>
             </Form.Item>
 
@@ -600,12 +598,10 @@ const AdminProduct = () => {
                 showUploadList={{ showError: false }}
                 onError={() => {}}
               >
-                {(fileList?.length || 0) < 5 && 
-                  <div>
-                    <PlusOutlined />
-                    <div style={{ marginTop: 8 }}>Chọn ảnh mới</div>
-                  </div>
-                }
+                <div>
+                  <PlusOutlined />
+                  <div style={{ marginTop: 8 }}>Chọn ảnh mới</div>
+                </div>
               </Upload>
               <div style={{marginTop: 8, color: '#999'}}>
                 * Nếu bạn thêm ảnh mới, tất cả ảnh cũ sẽ bị thay thế

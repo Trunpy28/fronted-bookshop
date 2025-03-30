@@ -3,13 +3,12 @@ import { Button, Form, Space, DatePicker, Input, InputNumber, Modal, Select, Tab
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import locale from 'antd/es/date-picker/locale/vi_VN';
 
 import * as VoucherService from '../../services/VoucherService';
 import { WrapperHeader } from '../AdminProduct/style';
 import Loading from '../LoadingComponent/Loading';
-import { timeTranform } from '../../utils';
 import TableComponent from '../TableComponent/TableComponent';
 
 const { Option } = Select;
@@ -115,16 +114,16 @@ const AdminVoucher = () => {
         isActive: true,
         discountType: 'percentage',
         minOrderValue: 0,
-        startDate: moment(),
-        endDate: moment().add(7, 'days')
+        startDate: dayjs(),
+        endDate: dayjs().add(7, 'days')
       });
       setDiscountType('percentage');
     } else {
       setRowSelected(voucher._id);
       form.setFieldsValue({
         ...voucher,
-        startDate: moment(voucher.startDate),
-        endDate: moment(voucher.endDate)
+        startDate: dayjs(voucher.startDate),
+        endDate: dayjs(voucher.endDate)
       });
       setDiscountType(voucher.discountType);
     }
@@ -165,12 +164,12 @@ const AdminVoucher = () => {
       render: (text) => <div style={{ maxWidth: '200px', wordWrap: 'break-word' }}>{text}</div>,
     },
     {
-      title: 'Loại giảm giá',
+      title: 'Giảm giá',
       dataIndex: 'discountType',
       key: 'discountType',
       render: (type, record) => (
         <span>
-          {type === 'percentage' ? `${record.discountValue}%` : `${record.discountValue.toLocaleString('vi-VN')}đ`}
+          {type === 'percentage' ? `${record.discountValue}%` : `${record.discountValue.toLocaleString('vi-VN')} đ`}
         </span>
       ),
     },
@@ -178,19 +177,19 @@ const AdminVoucher = () => {
       title: 'Đơn hàng tối thiểu',
       dataIndex: 'minOrderValue',
       key: 'minOrderValue',
-      render: (value) => value.toLocaleString('vi-VN') + 'đ',
+      render: (value) => value.toLocaleString('vi-VN') + ' đ',
     },
     {
-      title: 'Ngày bắt đầu',
+      title: 'Thời gian bắt đầu',
       dataIndex: 'startDate',
       key: 'startDate',
-      render: (date) => timeTranform(date),
+      render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
     },
     {
-      title: 'Ngày kết thúc',
+      title: 'Thời gian kết thúc',
       dataIndex: 'endDate',
       key: 'endDate',
-      render: (date) => timeTranform(date),
+      render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
     },
     {
       title: 'Trạng thái',
@@ -208,9 +207,9 @@ const AdminVoucher = () => {
   // Định dạng thời gian
   const dateFormat = 'DD/MM/YYYY HH:mm';
 
-  const handleTableChange = (pagination) => {
-    setCurrentPage(pagination.current);
-    setPageSize(pagination.pageSize);
+  const handleTableChange = (page, pageSize) => {
+    setCurrentPage(page);
+    setPageSize(pageSize);
   };
 
   return (
@@ -271,8 +270,8 @@ const AdminVoucher = () => {
               isActive: true,
               discountType: 'percentage',
               minOrderValue: 0,
-              startDate: moment(),
-              endDate: moment().add(7, 'days')
+              startDate: dayjs(),
+              endDate: dayjs().add(7, 'days')
             }}
           >
             <Form.Item
@@ -363,7 +362,6 @@ const AdminVoucher = () => {
             <Form.Item
               label="Trạng thái"
               name="isActive"
-              valuePropName="checked"
             >
               <Select>
                 <Option value={true}>Kích hoạt</Option>

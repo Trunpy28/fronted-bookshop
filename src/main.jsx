@@ -13,6 +13,13 @@ createRoot(document.getElementById("root")).render(
     <Provider store={store}>
       <App />
     </Provider>
-    <ReactQueryDevtools initialIsOpen={false} />
+
+    <div
+      style={{
+        fontSize: "16px",
+      }}
+    >
+      <ReactQueryDevtools initialIsOpen={false} />
+    </div>
   </QueryClientProvider>
 );

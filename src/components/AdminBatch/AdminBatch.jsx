@@ -9,10 +9,8 @@ import { useSelector } from "react-redux";
 import { WrapperHeader } from "../AdminProduct/style";
 import TableComponent from "../TableComponent/TableComponent";
 import { useNavigate } from "react-router-dom";
-import moment from 'moment';
-import 'moment/locale/vi';
+import dayjs from 'dayjs';
 import locale from 'antd/es/date-picker/locale/vi_VN';
-import { timeTranform } from "../../utils";
 
 const AdminBatch = () => {
   const navigate = useNavigate();
@@ -27,7 +25,7 @@ const AdminBatch = () => {
   const [pageSize, setPageSize] = useState(10);
 
   const queryBatches = useQuery({
-    queryKey: ["batches", currentPage, pageSize],
+    queryKey: ["admin-batches", currentPage, pageSize],
     queryFn: () => BatchService.getBatchesPaginated(currentPage, pageSize, user?.access_token),
     enabled: !!user?.access_token && user?.isAdmin && !!currentPage && !!pageSize,
     keepPreviousData: true,
@@ -35,7 +33,8 @@ const AdminBatch = () => {
 
   const mutationCreate = useMutation({
     mutationFn: (data) => {
-      // Chuyển đổi đối tượng moment thành string nếu có
+      console.log(data.dateReceived);
+      
       const formattedData = {
         ...data,
         dateReceived: data.dateReceived ? data.dateReceived.format('YYYY-MM-DD HH:mm:ss') : undefined
@@ -117,7 +116,7 @@ const AdminBatch = () => {
       supplierName: record.supplierName,
       discountPercentage: record.discountPercentage,
       notes: record.notes,
-      dateReceived: record.dateReceived ? moment(record.dateReceived) : undefined
+      dateReceived: record.dateReceived ? dayjs(record.dateReceived) : undefined
     });
     setIsModalEditOpen(true);
   };
@@ -144,7 +143,7 @@ const AdminBatch = () => {
     {
       title: "Thời gian nhập lô",
       dataIndex: "dateReceived",
-      render: (text) => text ? timeTranform(text) : 'Chưa có',
+      render: (text) => text ? dayjs(text).format('DD/MM/YYYY HH:mm') : 'Chưa có',
     },
     {
       title: "Chiết khấu (%)",
@@ -247,10 +246,10 @@ const AdminBatch = () => {
               label="Thời gian nhập lô"
               name="dateReceived"
               rules={[{ required: true, message: "Vui lòng chọn thời gian nhập lô!" }]}
-              initialValue={moment()}
+              initialValue={dayjs()}
             >
               <DatePicker 
-                showTime={{ format: 'HH:mm', defaultValue: moment() }}
+                showTime={{ format: 'HH:mm', defaultValue: dayjs() }}
                 format={dateFormat} 
                 style={{ width: "100%" }}
                 locale={locale}
@@ -304,7 +303,7 @@ const AdminBatch = () => {
               rules={[{ required: true, message: "Vui lòng chọn thời gian nhập lô!" }]}
             >
               <DatePicker 
-                showTime={{ format: 'HH:mm', defaultValue: moment() }}
+                showTime={{ format: 'HH:mm', defaultValue: dayjs() }}
                 format={dateFormat} 
                 style={{ width: "100%" }}
                 locale={locale}

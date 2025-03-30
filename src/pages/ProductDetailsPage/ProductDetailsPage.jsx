@@ -11,7 +11,7 @@ const ProductDetailsPage = () => {
         backgroundColor: "#F0F0F0",
       }}
     >
-      <ProductDetailsComponent idProduct={id} />
+      <ProductDetailsComponent productId={id} />
     </div>
   );
 };

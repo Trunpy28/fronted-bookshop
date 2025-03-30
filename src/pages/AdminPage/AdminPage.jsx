@@ -17,8 +17,21 @@ import AdminGenre from "../../components/AdminGenre/AdminGenre";
 import AdminInventory from "../../components/AdminInventory/AdminInventory";
 import AdminBatch from "../../components/AdminBatch/AdminBatch";
 import AdminVoucher from "../../components/AdminVoucher/AdminVoucher";
+import { useSelector } from 'react-redux';
+import { Navigate } from 'react-router-dom';
 
 const AdminPage = () => {
+  const user = useSelector((state) => state.user);
+
+  // Kiểm tra quyền admin
+  if (!user?.id) {
+    return <Navigate to="/sign-in" state={{ from: "/admin" }} />;
+  }
+
+  if (!user?.isAdmin) {
+    return <Navigate to="/forbidden" />;
+  }
+
   const [keySelected, setKeySelected] = useState("user");
 
   const renderPage = (key) => {
@@ -108,7 +121,7 @@ const AdminPage = () => {
   return (
     <div>
       <HeaderComponent isHiddenSearch isHiddenCart />
-      <div style={{ display: "flex", marginTop: '30px'}}>
+      <div style={{ display: "flex", marginTop: '30px' }}>
         <ConfigProvider
           theme={{
             components: {
@@ -133,7 +146,6 @@ const AdminPage = () => {
             mode="inline"
             items={items}
           />
-          
         </ConfigProvider>
 
         <div style={{padding: '20px', flex: '1'}}>

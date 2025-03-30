@@ -98,7 +98,7 @@ const SignInPage = () => {
           ĐĂNG NHẬP
         </div>
         <WrapperSignInUpForm>
-          <Form>
+          <Form style={{ width: "" }}>
             <WrapperInputField>
               <div style={{ fontSize: "16px", color: "#555555", marginBottom: "5px" }}>
                 Email
@@ -128,9 +128,8 @@ const SignInPage = () => {
                 />
               </Form.Item>
             </WrapperInputField>
-
             {data?.status === "ERR" && (
-              <div style={{ color: "red", marginBottom: "20px", fontSize: "14px" }}>
+              <div style={{ color: "red", marginBottom: "20px", fontSize: "14px", maxWidth: "300px" }}>
                 {data?.message}
               </div>
             )}

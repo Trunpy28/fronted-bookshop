@@ -16,9 +16,8 @@ import ContactPage from "../pages/ContactPage/ContactPage";
 import EmailInput from "../pages/ResetPassword/EmailInput";
 import OTPInput from "../pages/ResetPassword/OTPInput";
 import ResetPassword from "../pages/ResetPassword/ResetPassword";
-import AdminGenre from "../components/AdminGenre/AdminGenre";
-import AdminInventory from "../components/AdminInventory/AdminInventory";
-
+import ChangePassword from "../pages/ChangePassword/ChangePassword";
+import ForbiddenPage from "../pages/ForbiddenPage/ForbiddenPage";
 
 export const routes =  [
     { 
@@ -123,6 +122,17 @@ export const routes =  [
         isShowHeader: false,
         isPrivate: true,
         adminManage: true
+    },
+    {
+        path: "/change-password",
+        page: ChangePassword,
+        isShowHeader: true,
+        isShowFooter: true,
+        isPrivate: true,
+    },
+    {
+        path: "/forbidden",
+        page: ForbiddenPage,
     },
     { 
         path: '*',

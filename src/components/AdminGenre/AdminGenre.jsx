@@ -21,6 +21,7 @@ const AdminGenre = () => {
   const { data: genres, refetch, isLoading: isLoadingGenres } = useQuery({
     queryKey: ["admin-genres"],
     queryFn: () => GenreService.getAllGenres(),
+    enabled: !!user?.access_token && user?.isAdmin,
   });
 
   const mutationCreate = useMutation({

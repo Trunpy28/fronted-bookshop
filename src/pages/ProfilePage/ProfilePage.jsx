@@ -19,6 +19,7 @@ import { updateUser } from "../../redux/slices/userSlice";
 import { UploadOutlined, UserOutlined } from "@ant-design/icons";
 import { getBase64 } from "../../utils";
 import addressVietNam from "../../constants/addressConstants";
+import { useNavigate } from "react-router-dom";
 
 const { Option } = Select;
 const formItemLayout = {
@@ -68,6 +69,7 @@ const ProfilePage = () => {
   });
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleGetDetailsUser = async (id, token) => {
     const res = await UserService.getDetailsUser(id, token);
@@ -286,6 +288,17 @@ const ProfilePage = () => {
                   
                   <ChangingButton onClick={handleUpdateAvatar}>
                     Cập nhật ảnh đại diện
+                  </ChangingButton>
+                </div>
+              </Card>
+
+              <Card title="Bảo mật" style={{ width: '100%', marginTop: '20px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+                  <p style={{ textAlign: 'center', marginBottom: '10px' }}>
+                    Đổi mật khẩu để bảo vệ tài khoản của bạn
+                  </p>
+                  <ChangingButton onClick={() => navigate('/change-password')}>
+                    Đổi mật khẩu
                   </ChangingButton>
                 </div>
               </Card>

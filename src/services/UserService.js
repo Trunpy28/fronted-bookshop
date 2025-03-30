@@ -124,3 +124,16 @@ export const resetPassword = async (email, otp, password) => {
   });
   return res.data;
 }
+
+export const changePassword = async (id, token, currentPassword, newPassword) => {
+  const res = await axiosJWT.patch(
+    `${apiUrl}/user/change-password/${id}`,
+    { currentPassword, newPassword },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return res.data;
+};

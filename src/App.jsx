@@ -15,6 +15,7 @@ import { setCart } from "./redux/slices/cartSlice";
 function App() {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
   const user = useSelector((state) => state.user);
 
   // Xử lý access token nằm trong localStorage
@@ -33,9 +34,10 @@ function App() {
     try {
       const res = await UserService.getDetailsUser(id, token);
       dispatch(updateUser({ ...res?.data, access_token: token }));
-
+      return true;
     } catch (e) {
       console.log(e);
+      return false;
     }
   };
 
@@ -51,12 +53,19 @@ function App() {
 
   // Chạy 1 lần để lấy thông tin user và giỏ hàng
   useEffect(() => {
-    const { storageData: accessToken, decoded } = handleDecoded();
-    if (decoded?.id) {
-      handleGetDetailsUser(decoded.id, accessToken);
-      handleGetMyCart(decoded.id, accessToken);
-    }
-    setIsLoading(false);
+    const initializeApp = async () => {
+      const { storageData: accessToken, decoded } = handleDecoded();
+      if (decoded?.id) {
+        const success = await handleGetDetailsUser(decoded.id, accessToken);
+        if (success) {
+          handleGetMyCart(decoded.id, accessToken);
+        }
+      }
+      setIsInitialized(true);
+      setIsLoading(false);
+    };
+
+    initializeApp();
   }, []);
 
   // Kiểm tra access_token hết hạn trước khi thực thi request, đặt access token mới vào config
@@ -80,8 +89,12 @@ function App() {
     }
   );
 
-  if (isLoading) {
-    return <Loading isLoading={true} />;
+  if (isLoading || !isInitialized) {
+    return (
+      <div className="w-screen h-screen flex items-center justify-center">
+        <Loading isLoading={true} />
+      </div>
+    );
   }
 
   return (
@@ -90,6 +103,17 @@ function App() {
         {routes.map((route) => {
           const Page = route.page;
           const Layout = route.isShowHeader ? DefaultComponent : Fragment;
+
+          // Kiểm tra route private
+          if (route.isPrivate && !user?.id) {
+            return (
+              <Route
+                key={route.path}
+                path={route.path}
+                element={<Navigate to="/sign-in" state={{ from: route.path }} />}
+              />
+            );
+          }
 
           return (
             <Route
