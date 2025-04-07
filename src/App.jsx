@@ -30,10 +30,10 @@ function App() {
   };
 
   // Lấy thông tin user
-  const handleGetDetailsUser = async (id, token) => {
+  const handleGetDetailsUser = async (id, accessToken) => {
     try {
-      const res = await UserService.getDetailsUser(id, token);
-      dispatch(updateUser({ ...res?.data, access_token: token }));
+      const res = await UserService.getDetailsUser(id, accessToken);
+      dispatch(updateUser({ ...res?.data, access_token: accessToken }));
       return true;
     } catch (e) {
       console.log(e);
@@ -41,9 +41,9 @@ function App() {
     }
   };
 
-  const handleGetMyCart = async (userId, token) => {
+  const handleGetMyCart = async (accessToken) => {
     try {
-      const res = await CartService.getCartByUser(token);
+      const res = await CartService.getCartByUser(accessToken);
       dispatch(setCart(res?.data));
     }
     catch (e) {
@@ -58,7 +58,7 @@ function App() {
       if (decoded?.id) {
         const success = await handleGetDetailsUser(decoded.id, accessToken);
         if (success) {
-          handleGetMyCart(decoded.id, accessToken);
+          handleGetMyCart(accessToken);
         }
       }
       setIsInitialized(true);
@@ -76,11 +76,11 @@ function App() {
 
       if (decoded?.exp < currentTime.getTime() / 1000) {
         const data = await UserService.refreshToken();
-        const newToken = data?.access_token;
+        const newToken = data?.accessToken;
         localStorage.setItem('access_token', JSON.stringify(newToken));
         config.headers["Authorization"] = `Bearer ${newToken}`;
         
-        dispatch(updateUser({ ...user, access_token: newToken }));
+        await handleGetDetailsUser(decoded.id, newToken);
       }
       return config;
     },

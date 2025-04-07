@@ -1,10 +1,15 @@
 import axios from "axios";
+import { axiosJWT } from "./UserService";
 
 const API_URL = `${import.meta.env.VITE_API_URL}/voucher`;
 
-// Tạo mới voucher
+export const getActiveVouchers = async () => {
+  const response = await axios.get(`${API_URL}/active`);
+  return response.data;
+};
+
 export const createVoucher = async (data, token) => {
-  const response = await axios.post(`${API_URL}/create`, data, {
+  const response = await axiosJWT.post(`${API_URL}/create`, data, {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -13,9 +18,8 @@ export const createVoucher = async (data, token) => {
   return response.data;
 };
 
-// Lấy danh sách tất cả voucher
 export const getAllVouchers = async (token) => {
-  const response = await axios.get(`${API_URL}/getAll`, {
+  const response = await axiosJWT.get(`${API_URL}/getAll`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -23,19 +27,13 @@ export const getAllVouchers = async (token) => {
   return response.data;
 };
 
-// Lấy chi tiết voucher
-export const getVoucherDetails = async (id, token) => {
-  const response = await axios.get(`${API_URL}/get/${id}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const getVoucherDetails = async (id) => {
+  const response = await axios.get(`${API_URL}/get/${id}`);
   return response.data;
 };
 
-// Cập nhật voucher
 export const updateVoucher = async (id, data, token) => {
-  const response = await axios.put(`${API_URL}/update/${id}`, data, {
+  const response = await axiosJWT.put(`${API_URL}/update/${id}`, data, {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -44,9 +42,8 @@ export const updateVoucher = async (id, data, token) => {
   return response.data;
 };
 
-// Xóa voucher
 export const deleteVoucher = async (id, token) => {
-  const response = await axios.delete(`${API_URL}/delete/${id}`, {
+  const response = await axiosJWT.delete(`${API_URL}/delete/${id}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -54,9 +51,8 @@ export const deleteVoucher = async (id, token) => {
   return response.data;
 };
 
-// Áp dụng voucher
 export const applyVoucher = async (data, token) => {
-  const response = await axios.post(`${API_URL}/apply`, data, {
+  const response = await axiosJWT.post(`${API_URL}/apply`, data, {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",

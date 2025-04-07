@@ -13,7 +13,7 @@ const cartSlice = createSlice({
         },
         resetCart() {
             return { ...initialState };
-        },
+        }
     },
 });
 

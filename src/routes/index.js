@@ -1,5 +1,5 @@
 import HomePage from "../pages/HomePage/HomePage";
-import OrderPage from "../pages/OrderPage/OrderPage";
+import CartPage from "../pages/CartPage/CartPage";
 import ProductPage from "../pages/ProductPage/ProductPage";
 import NotFoundPage from "../pages/NotFoundPage/NotFoundPage";
 import TypeProductPage from "../pages/TypeProductPage/TypeProductPage";
@@ -18,6 +18,8 @@ import OTPInput from "../pages/ResetPassword/OTPInput";
 import ResetPassword from "../pages/ResetPassword/ResetPassword";
 import ChangePassword from "../pages/ChangePassword/ChangePassword";
 import ForbiddenPage from "../pages/ForbiddenPage/ForbiddenPage";
+import ShippingAddressPage from "../pages/ShippingAddress/ShippingAddressPage";
+import VoucherPage from "../pages/VoucherPage/VoucherPage";
 
 export const routes =  [
     { 
@@ -27,8 +29,8 @@ export const routes =  [
         isPrivate: false
     },
     { 
-        path: '/order',
-        page: OrderPage,
+        path: '/cart',
+        page: CartPage,
         isShowHeader: true,
         isPrivate: true
     },
@@ -116,6 +118,12 @@ export const routes =  [
         isShowHeader: true,
         isPrivate: false
     },
+    {
+        path: '/vouchers',
+        page: VoucherPage,
+        isShowHeader: true,
+        isPrivate: false
+    },
     { 
         path: '/admin',
         page: AdminPage,
@@ -126,6 +134,13 @@ export const routes =  [
     {
         path: "/change-password",
         page: ChangePassword,
+        isShowHeader: true,
+        isShowFooter: true,
+        isPrivate: true,
+    },
+    {
+        path: "/user/account/address",
+        page: ShippingAddressPage,
         isShowHeader: true,
         isShowFooter: true,
         isPrivate: true,

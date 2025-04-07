@@ -15,6 +15,8 @@ import { jwtDecode } from "jwt-decode";
 import { useDispatch } from 'react-redux';
 import { updateUser } from "../../redux/slices/userSlice";
 import { GoogleOutlined } from '@ant-design/icons'; // Import icon Google từ Ant Design
+import * as CartService from "../../services/CartService";
+import { setCart } from "../../redux/slices/cartSlice";
 
 const SignInPage = () => {
   const location = useLocation();
@@ -53,6 +55,7 @@ const SignInPage = () => {
         const decoded = jwtDecode(data?.access_token);
         if (decoded?.id) {
           handleGetDetailsUser(decoded.id, data?.access_token);
+          handleGetCart(data?.access_token);
         }
       }
 
@@ -70,6 +73,11 @@ const SignInPage = () => {
     const res = await UserService.getDetailsUser(id, token);
     dispatch(updateUser({ ...res?.data, access_token: token }));
   };
+
+  const handleGetCart = async (accessToken) => {
+    const res = await CartService.getCartByUser(accessToken);
+    dispatch(setCart(res?.data));
+  }
 
   const handleOnChangeEmail = (e) => {
     setEmail(e.target.value);

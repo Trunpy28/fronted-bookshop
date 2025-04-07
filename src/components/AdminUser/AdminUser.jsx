@@ -30,6 +30,14 @@ import DrawerComponent from "../DrawerComponent/DrawerComponent";
 import { useSelector } from "react-redux";
 import ModalComponent from "../ModalComponent/ModalComponent";
 import CountUp from "react-countup";
+import addressVietNam from "../../constants/addressConstants";
+
+const { Option } = Select;
+
+const addressFormItemLayout = {
+  labelCol: { span: 6 },
+  wrapperCol: { span: 18 },
+};
 
 const AdminUser = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -66,14 +74,19 @@ const AdminUser = () => {
     confirmPassword: "",
     isAdmin: false,
     phone: "",
-    address: "",
+    city: "",
+    district: "",
+    ward: "",
+    detailedAddress: "",
     avatar: "",
   });
+
+  const [districts, setDistricts] = useState([]);
+  const [wards, setWards] = useState([]);
 
   const [stateUserDetails, setStateUserDetails] = useState({
     name: "",
     email: "",
-    // password: "",
     isAdmin: false,
     phone: "",
     address: "",
@@ -83,6 +96,28 @@ const AdminUser = () => {
   const [form] = Form.useForm();
   const [formDetails] = Form.useForm();
 
+  // Xử lý thay đổi tỉnh/thành phố
+  useEffect(() => {
+    if (stateUser.city) {
+      const selectedCity = addressVietNam.find(c => c.name === stateUser.city);
+      if (selectedCity) {
+        setDistricts(selectedCity.districts);
+        setStateUser(prev => ({ ...prev, district: "", ward: "" }));
+      }
+    }
+  }, [stateUser.city]);
+
+  // Xử lý thay đổi quận/huyện
+  useEffect(() => {
+    if (stateUser.district && districts.length) {
+      const selectedDistrict = districts.find(d => d.name === stateUser.district);
+      if (selectedDistrict) {
+        setWards(selectedDistrict.wards);
+        setStateUser(prev => ({ ...prev, ward: "" }));
+      }
+    }
+  }, [stateUser.district, districts]);
+
   const mutation = useMutationHooks(async (data) => {
     const {
       name,
@@ -91,9 +126,21 @@ const AdminUser = () => {
       confirmPassword,
       isAdmin,
       phone,
-      address,
+      city,
+      district,
+      ward,
+      detailedAddress,
       avatar,
     } = data;
+    
+    // Tạo đối tượng address từ các thành phần
+    const address = {
+      city,
+      district,
+      ward,
+      detailedAddress
+    };
+    
     const res = await UserService.signUpUser({
       name,
       email,
@@ -139,7 +186,6 @@ const AdminUser = () => {
       setStateUserDetails({
         name: res?.data?.name,
         email: res?.data?.email,
-        // password: res?.data?.password,
         isAdmin: res?.data?.isAdmin,
         phone: res?.data?.phone,
         address: res?.data?.address,
@@ -150,7 +196,10 @@ const AdminUser = () => {
   };
 
   useEffect(() => {
-    formDetails.setFieldsValue(stateUserDetails);
+    formDetails.setFieldsValue({
+      ...stateUserDetails,
+      isAdmin: stateUserDetails.isAdmin
+    });
   }, [formDetails, stateUserDetails]);
 
   useEffect(() => {
@@ -285,42 +334,24 @@ const AdminUser = () => {
       title: "Tên người dùng",
       dataIndex: "name",
       render: (text) => <a>{text}</a>,
-      sorter: (a, b) => a.name.localeCompare(b.name),
-      ...getColumnSearchProps("name"),
     },
     {
       title: "Email",
       dataIndex: "email",
-      sorter: (a, b) => a.email.localeCompare(b.email),
-      ...getColumnSearchProps("email"),
     },
     {
       title: "Vai trò",
       dataIndex: "isAdmin",
-      filters: [
-        {
-          text: "Quản trị viên",
-          value: "Quản trị viên",
-        },
-        {
-          text: "Khách hàng",
-          value: "Khách hàng",
-        },
-      ],
-      onFilter: (value, record) => {
-        return record.isAdmin === value;
-      },
     },
     {
       title: "SĐT",
       dataIndex: "phone",
-      ...getColumnSearchProps("phone"),
     },
     {
       title: "Địa chỉ",
       dataIndex: "address",
-      sorter: (a, b) => a.address.localeCompare(b.address),
-      ...getColumnSearchProps("address"),
+      render: (address) => getFullAddress(address),
+      width: 300,
     },
     {
       title: "Thao tác",
@@ -404,9 +435,14 @@ const AdminUser = () => {
       confirmPassword: "",
       isAdmin: false,
       phone: "",
-      address: "",
+      city: "",
+      district: "",
+      ward: "",
+      detailedAddress: "",
       avatar: "",
     });
+    setDistricts([]);
+    setWards([]);
   }, [isModalOpen]);
 
   const handleCloseDrawer = () => {
@@ -434,9 +470,14 @@ const AdminUser = () => {
       confirmPassword: "",
       isAdmin: false,
       phone: "",
-      address: "",
+      city: "",
+      district: "",
+      ward: "",
+      detailedAddress: "",
       avatar: "",
     });
+    setDistricts([]);
+    setWards([]);
     form.resetFields();
     setIsModalOpen(false);
   };
@@ -475,9 +516,14 @@ const AdminUser = () => {
       confirmPassword: "",
       isAdmin: false,
       phone: "",
-      address: "",
+      city: "",
+      district: "",
+      ward: "",
+      detailedAddress: "",
       avatar: "",
     });
+    setDistricts([]);
+    setWards([]);
     form.resetFields();
     setIsModalOpen(false);
   };
@@ -508,10 +554,24 @@ const AdminUser = () => {
     });
   };
 
-  const handleOnChangeDetails = (e) => {
-    setStateUserDetails({
-      ...stateUserDetails,
-      [e.target.name]: e.target.value,
+  const handleOnChangeCity = (value) => {
+    setStateUser({
+      ...stateUser,
+      city: value,
+    });
+  };
+
+  const handleOnChangeDistrict = (value) => {
+    setStateUser({
+      ...stateUser,
+      district: value,
+    });
+  };
+
+  const handleOnChangeWard = (value) => {
+    setStateUser({
+      ...stateUser,
+      ward: value,
     });
   };
 
@@ -532,22 +592,12 @@ const AdminUser = () => {
     });
   };
 
-  const handleOnChangeAvatarDetails = async ({ file }) => {
-    if (!file.url && !file.preview) {
-      file.preview = await getBase64(file.originFileObj);
-    }
-    setStateUserDetails({
-      ...stateUserDetails,
-      avatar: file.preview,
-    });
-  };
-
   const onUpdateUser = () => {
     mutationUpdate.mutate(
       {
         id: rowSelected,
         token: user?.access_token,
-        ...stateUserDetails,
+        isAdmin: stateUserDetails.isAdmin
       },
       {
         onSettled: () => {
@@ -555,6 +605,19 @@ const AdminUser = () => {
         },
       }
     );
+  };
+
+  // Tạo chuỗi địa chỉ đầy đủ
+  const getFullAddress = (address) => {
+    if (!address) return "Chưa có địa chỉ";
+    
+    const parts = [];
+    if (address.detailedAddress) parts.push(address.detailedAddress);
+    if (address.ward) parts.push(address.ward);
+    if (address.district) parts.push(address.district);
+    if (address.city) parts.push(address.city);
+    
+    return parts.length ? parts.join(', ') : "Chưa có địa chỉ";
   };
 
   //Memo cho thống kê
@@ -743,22 +806,110 @@ const AdminUser = () => {
               />
             </Form.Item>
 
-            <Form.Item
-              label="Địa chỉ"
-              name="address"
-              rules={[
-                {
-                  required: false,
-                  message: "Hãy nhập địa chỉ!",
-                },
-              ]}
+            <div
+              style={{
+                marginBottom: "20px",
+                border: "1px solid #f0f0f0",
+                borderRadius: "5px",
+                padding: "20px",
+                backgroundColor: "#fafafa",
+              }}
             >
-              <InputComponent
-                values={stateUser.address}
-                onChange={handleOnChange}
-                name="address"
-              />
-            </Form.Item>
+              <div style={{ fontWeight: "bold", marginBottom: "15px" }}>Địa chỉ</div>
+
+              <Form.Item
+                label="Tỉnh/Thành phố"
+                name="city"
+                rules={[
+                  {
+                    required: false,
+                    message: "Hãy chọn tỉnh/thành phố!",
+                  },
+                ]}
+                {...addressFormItemLayout}
+              >
+                <Select
+                  placeholder="Chọn Tỉnh/Thành phố"
+                  onChange={handleOnChangeCity}
+                  value={stateUser.city || undefined}
+                >
+                  {addressVietNam.map((city) => (
+                    <Option key={city.code} value={city.name}>
+                      {city.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                label="Quận/Huyện"
+                name="district"
+                rules={[
+                  {
+                    required: false,
+                    message: "Hãy chọn quận/huyện!",
+                  },
+                ]}
+                {...addressFormItemLayout}
+              >
+                <Select
+                  placeholder="Chọn Quận/Huyện"
+                  onChange={handleOnChangeDistrict}
+                  value={stateUser.district || undefined}
+                  disabled={!stateUser.city}
+                >
+                  {districts.map((dist) => (
+                    <Option key={dist.code} value={dist.name}>
+                      {dist.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                label="Phường/Xã"
+                name="ward"
+                rules={[
+                  {
+                    required: false,
+                    message: "Hãy chọn phường/xã!",
+                  },
+                ]}
+                {...addressFormItemLayout}
+              >
+                <Select
+                  placeholder="Chọn Phường/Xã"
+                  onChange={handleOnChangeWard}
+                  value={stateUser.ward || undefined}
+                  disabled={!stateUser.district}
+                >
+                  {wards.map((ward) => (
+                    <Option key={ward.code} value={ward.name}>
+                      {ward.name}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+
+              <Form.Item
+                label="Địa chỉ chi tiết"
+                name="detailedAddress"
+                rules={[
+                  {
+                    required: false,
+                    message: "Hãy nhập địa chỉ chi tiết!",
+                  },
+                ]}
+                {...addressFormItemLayout}
+              >
+                <InputComponent
+                  name="detailedAddress"
+                  placeholder="Số nhà, tên đường..."
+                  value={stateUser.detailedAddress}
+                  onChange={handleOnChange}
+                />
+              </Form.Item>
+            </div>
 
             <Form.Item
               label="Vai trò"
@@ -864,70 +1015,26 @@ const AdminUser = () => {
           >
             <Form.Item
               label="Tên người dùng"
-              name="name"
-              rules={[
-                {
-                  required: true,
-                  message: "Hãy nhập tên người dùng!",
-                },
-              ]}
             >
-              <InputComponent
-                values={stateUserDetails?.name}
-                onChange={handleOnChangeDetails}
-                name="name"
-              />
+              <span>{stateUserDetails?.name}</span>
             </Form.Item>
 
             <Form.Item
               label="Email"
-              name="email"
-              rules={[
-                {
-                  required: true,
-                  message: "Hãy nhập email người dùng!",
-                },
-              ]}
             >
-              <InputComponent
-                values={stateUserDetails?.email}
-                onChange={handleOnChangeDetails}
-                name="email"
-              />
+              <span>{stateUserDetails?.email}</span>
             </Form.Item>
 
             <Form.Item
               label="Số điện thoại"
-              name="phone"
-              rules={[
-                {
-                  required: false,
-                  message: "Hãy nhập số điện thoại!",
-                },
-              ]}
             >
-              <InputComponent
-                values={stateUserDetails?.phone}
-                onChange={handleOnChangeDetails}
-                name="phone"
-              />
+              <span>{stateUserDetails?.phone || "Chưa có thông tin"}</span>
             </Form.Item>
 
             <Form.Item
               label="Địa chỉ"
-              name="address"
-              rules={[
-                {
-                  required: false,
-                  message: "Hãy nhập địa chỉ!",
-                },
-              ]}
             >
-              <InputComponent
-                values={stateUserDetails?.address}
-                onChange={handleOnChangeDetails}
-                name="address"
-              />
+              <span>{getFullAddress(stateUserDetails?.address)}</span>
             </Form.Item>
 
             <Form.Item
@@ -961,34 +1068,20 @@ const AdminUser = () => {
 
             <Form.Item
               label="Ảnh đại diện"
-              name="avatar"
-              rules={[
-                {
-                  required: false,
-                  message: "Hãy chọn ảnh đại diện!",
-                },
-              ]}
             >
-              <WrapperUploadFile
-                onChange={handleOnChangeAvatarDetails}
-                showUploadList={true}
-                maxCount={1}
-              >
-                <Button>Chọn ảnh</Button>
-                {stateUserDetails?.avatar && (
-                  <img
-                    src={stateUserDetails?.avatar}
-                    style={{
-                      height: "100px",
-                      width: "100px",
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      objectPosition: "center",
-                    }}
-                    alt="Ảnh đại diện"
-                  />
-                )}
-              </WrapperUploadFile>
+              {stateUserDetails?.avatar && (
+                <img
+                  src={stateUserDetails?.avatar}
+                  style={{
+                    height: "100px",
+                    width: "100px",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    objectPosition: "center",
+                  }}
+                  alt="Ảnh đại diện"
+                />
+              )}
             </Form.Item>
 
             <Form.Item

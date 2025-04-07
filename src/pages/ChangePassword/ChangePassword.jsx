@@ -67,9 +67,12 @@ const ChangePassword = () => {
                 name="change-password"
                 onFinish={handleChangePassword}
                 autoComplete="off"
+                layout="vertical"
+                size="large"
               >
                 <Form.Item
                   name="currentPassword"
+                  label="Mật khẩu hiện tại"
                   rules={[
                     {
                       required: true,
@@ -78,7 +81,7 @@ const ChangePassword = () => {
                   ]}
                 >
                   <Input.Password
-                    placeholder="Mật khẩu hiện tại"
+                    placeholder="Nhập mật khẩu hiện tại"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                   />
@@ -86,6 +89,7 @@ const ChangePassword = () => {
 
                 <Form.Item
                   name="newPassword"
+                  label="Mật khẩu mới"
                   rules={[
                     {
                       required: true,
@@ -98,7 +102,7 @@ const ChangePassword = () => {
                   ]}
                 >
                   <Input.Password
-                    placeholder="Mật khẩu mới"
+                    placeholder="Nhập mật khẩu mới"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                   />
@@ -106,6 +110,7 @@ const ChangePassword = () => {
 
                 <Form.Item
                   name="confirmPassword"
+                  label="Xác nhận mật khẩu mới"
                   dependencies={["newPassword"]}
                   rules={[
                     {
@@ -125,7 +130,7 @@ const ChangePassword = () => {
                   ]}
                 >
                   <Input.Password
-                    placeholder="Xác nhận mật khẩu mới"
+                    placeholder="Nhập lại mật khẩu mới"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                   />

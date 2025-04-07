@@ -23,7 +23,7 @@ import * as UserService from "../../services/UserService";
 import { resetUser } from "../../redux/slices/userSlice";
 import Loading from "../LoadingComponent/Loading";
 import { searchProduct } from "../../redux/slices/productSlice";
-import { emptyOrder } from "../../redux/slices/orderSlice";
+import { resetCart } from "../../redux/slices/cartSlice";
 const { Search } = Input;
 
 const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
@@ -45,7 +45,7 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
     await UserService.logoutUser();
     localStorage.removeItem("access_token");
     dispatch(resetUser());
-    dispatch(emptyOrder());
+    dispatch(resetCart());
     setLoading(false);
     navigate("/");
   };

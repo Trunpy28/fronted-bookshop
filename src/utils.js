@@ -17,7 +17,7 @@ export const getBase64 = (file) =>
 
 export const convertPrice = (price) => {
   try {
-      const result  = price?.toLocaleString().replaceAll(',', '.')
+      const result = price?.toLocaleString().replaceAll(',', '.')
       return `${result} đ`
   } catch (error) {
       return null

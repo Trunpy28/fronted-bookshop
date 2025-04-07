@@ -19,7 +19,7 @@ import { updateUser } from "../../redux/slices/userSlice";
 import { UploadOutlined, UserOutlined } from "@ant-design/icons";
 import { getBase64 } from "../../utils";
 import addressVietNam from "../../constants/addressConstants";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const { Option } = Select;
 const formItemLayout = {
@@ -70,6 +70,7 @@ const ProfilePage = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleGetDetailsUser = async (id, token) => {
     const res = await UserService.getDetailsUser(id, token);
@@ -162,6 +163,10 @@ const ProfilePage = () => {
       avatar,
       access_token: user?.access_token,
     });
+  };
+
+  const handleNavigateToAddresses = () => {
+    navigate("/user/account/address", { state: { prevPath: location.pathname } });
   };
 
   return (
@@ -299,6 +304,23 @@ const ProfilePage = () => {
                   </p>
                   <ChangingButton onClick={() => navigate('/change-password')}>
                     Đổi mật khẩu
+                  </ChangingButton>
+                </div>
+              </Card>
+
+              <Card
+                title="Địa chỉ"
+                style={{ marginTop: "20px", width: "100%" }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
+                  <p style={{ textAlign: 'center' }}>
+                    Quản lý danh sách địa chỉ giao hàng và thanh toán
+                  </p>
+                  <ChangingButton 
+                    onClick={handleNavigateToAddresses}
+                    style={{ backgroundColor: "#00A651", borderColor: "#00A651" }}
+                  >
+                    Quản lý địa chỉ
                   </ChangingButton>
                 </div>
               </Card>

@@ -23,13 +23,13 @@ export const signUpUser = async (data) => {
   return res.data;
 };
 
-export const getDetailsUser = async (id, access_token) => {
+export const getDetailsUser = async (id, accessToken) => {
   try {
     const res = await axiosJWT.get(
       `${apiUrl}/user/get-details/${id}`,
       {
         headers: {
-          Authorization: `Bearer ${access_token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
       }
     );
@@ -40,12 +40,12 @@ export const getDetailsUser = async (id, access_token) => {
   }
 };
 
-export const getAllUser = async (access_token) => {
+export const getAllUser = async (accessToken) => {
   const res = await axiosJWT.get(
     `${apiUrl}/user/get-all`,
     {
       headers: {
-        Authorization: `Bearer ${access_token}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     }
   );
@@ -73,28 +73,19 @@ export const logoutUser = async () => {
   return res.data;
 };
 
-export const updateUser = async (id, access_token, data) => {
+export const updateUser = async (id, accessToken, data) => {
   const res = await axiosJWT.put(`${apiUrl}/user/update-user/${id}`, data, {
     headers: {
-      Authorization: `Bearer ${access_token}`,
+      Authorization: `Bearer ${accessToken}`,
     },
   });
   return res.data;
 };
 
-export const deleteUser = async (id, access_token) => {
+export const deleteUser = async (id, accessToken) => {
   const res = await axiosJWT.delete(`${apiUrl}/user/delete-user/${id}`, {
     headers: {
-      Authorization: `Bearer ${access_token}`,
-    },
-  });
-  return res.data;
-};
-
-export const deleteManyUser = async (data, access_token) => {
-  const res = await axiosJWT.post(`${apiUrl}/user/delete-many`, data, {
-    headers: {
-      Authorization: `Bearer ${access_token}`,
+      Authorization: `Bearer ${accessToken}`,
     },
   });
   return res.data;
