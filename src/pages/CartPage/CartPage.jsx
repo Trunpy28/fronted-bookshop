@@ -1,4 +1,4 @@
-import { Button, ConfigProvider, InputNumber, message, Radio } from "antd";
+import { Button, ConfigProvider, Input, InputNumber, message, Radio } from "antd";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   WrapperCountCart,
@@ -19,11 +19,11 @@ import { convertPrice } from "../../utils";
 import ModalComponent from "../../components/ModalComponent/ModalComponent";
 import StepComponent from "../../components/StepConponent/StepComponent";
 import * as CartService from "../../services/CartService";
+import * as ShippingAddressService from "../../services/ShippingAddressService";
+import * as VoucherService from "../../services/VoucherService";
 import Loading from "../../components/LoadingComponent/Loading";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { setCart } from "../../redux/slices/cartSlice";
-import addressVietNam from "../../constants/addressConstants";
-import { getUserAddresses } from "../../services/ShippingAddressService";
 
 // Theme chung cho toàn trang
 const theme = {
@@ -66,10 +66,14 @@ const CartPage = () => {
   const [ward, setWard] = useState("");
   const [detailedAddress, setDetailedAddress] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [voucherCode, setVoucherCode] = useState("");
+  const [appliedVoucherCode, setAppliedVoucherCode] = useState("");
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const queryClient = useQueryClient();
 
   const { 
     data: addressData, 
@@ -77,7 +81,7 @@ const CartPage = () => {
     refetch: refetchAddresses
   } = useQuery({
     queryKey: ["shippingAddress", user?.id],
-    queryFn: () => getUserAddresses(user?.access_token),
+    queryFn: () => ShippingAddressService.getUserAddresses(user?.access_token),
     enabled: !!user?.access_token,
   });
 
@@ -108,6 +112,63 @@ const CartPage = () => {
       message.error(error?.response?.data?.message || "Có lỗi xảy ra");
     }
   });
+
+  const priceMemo = useMemo(() => {
+    const result = cart?.cartItems?.reduce((total, current) => {
+      return total + current?.product?.originalPrice * current?.quantity;
+    }, 0);
+    return result || 0;
+  }, [cart]);
+
+  const { 
+    data: voucherData, 
+    isLoading: isLoadingVoucher,
+    isFetching: isFetchingVoucher,
+    refetch: refetchVoucher
+  } = useQuery({
+    queryKey: ["voucher", appliedVoucherCode],
+    queryFn: () => {
+      if (!appliedVoucherCode) return null;
+      return VoucherService.getVoucherByCode(appliedVoucherCode);
+    },
+    enabled: !!appliedVoucherCode && !!user?.access_token,
+  });
+
+  const discountPrice = useMemo(() => {
+    if (!voucherData?.data || priceMemo === undefined || priceMemo === null) return 0;
+    
+    const voucher = voucherData.data;
+    
+    // Kiểm tra điều kiện tối thiểu
+    if (priceMemo < voucher.minOrderValue) return 0;
+    
+    // Tính toán giảm giá
+    let discount = 0;
+    if (voucher.discountType === 'percentage') {
+      discount = Math.floor((priceMemo * voucher.discountValue) / 100);
+    } else {
+      discount = voucher.discountValue;
+    }
+    
+    // Giảm giá không vượt quá giá trị đơn hàng
+    return Math.min(discount, priceMemo);
+  }, [voucherData, priceMemo]);
+
+  const deliveryPriceMemo = useMemo(() => {
+    if (priceMemo > 0 && priceMemo < 200000) {
+      return 25000;
+    } else if (priceMemo >= 200000 && priceMemo < 500000) {
+      return 10000;
+    } else if (priceMemo >= 500000) {
+      return 0;
+    } else {
+      return 0;
+    }
+  }, [priceMemo]);
+
+  const finalPriceMemo = useMemo(() => {
+    return Number(priceMemo) - Number(discountPrice) + Number(deliveryPriceMemo);
+  }, [priceMemo, discountPrice, deliveryPriceMemo]);
 
   // Khởi tạo thông tin từ địa chỉ default
   useEffect(() => {
@@ -157,29 +218,6 @@ const CartPage = () => {
     setIsAddressListModalOpen(false);
   };
 
-  const priceMemo = useMemo(() => {
-    const result = cart?.cartItems?.reduce((total, current) => {
-      return total + current?.product?.originalPrice * current?.quantity;
-    }, 0);
-    return result || 0;
-  }, [cart]);
-
-  const deliveryPriceMemo = useMemo(() => {
-    if (priceMemo > 0 && priceMemo < 200000) {
-      return 25000;
-    } else if (priceMemo >= 200000 && priceMemo < 500000) {
-      return 10000;
-    } else if (priceMemo >= 500000) {
-      return 0;
-    } else {
-      return 0;
-    }
-  }, [priceMemo]);
-
-  const totalPriceMemo = useMemo(() => {
-    return Number(priceMemo) + Number(deliveryPriceMemo);
-  }, [priceMemo, deliveryPriceMemo]);
-
   const fullAddress = useMemo(() => {
     const parts = [];
     if (detailedAddress) parts.push(detailedAddress);
@@ -192,6 +230,30 @@ const CartPage = () => {
   const isFormValid = useMemo(() => {
     return name && phone && city && district && ward && detailedAddress;
   }, [name, phone, city, district, ward, detailedAddress]);
+
+  const handleApplyVoucher = () => {
+    if (!voucherCode) {
+      message.warning("Vui lòng nhập mã giảm giá");
+      return;
+    }
+    
+    setAppliedVoucherCode(voucherCode);
+    refetchVoucher().then(result => {
+      if (result.data) {
+        message.success("Áp dụng mã giảm giá thành công");
+      }
+    }).catch(error => {
+      setAppliedVoucherCode("");
+      message.error(error?.response?.data?.message || "Mã giảm giá không hợp lệ");
+    });
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucherCode("");
+    setVoucherCode("");
+    queryClient.removeQueries({ queryKey: ["voucher", appliedVoucherCode] });
+    message.success("Đã hủy mã giảm giá");
+  };
 
   const handleCheckout = () => {
     if (!cart?.cartItems?.length) {
@@ -217,7 +279,8 @@ const CartPage = () => {
     
     navigate("/payment", { 
       state: { 
-        shippingAddress
+        shippingAddress,
+        voucherCode: appliedVoucherCode || ""
       } 
     });
   };
@@ -238,7 +301,7 @@ const CartPage = () => {
   ];
 
   // Check nếu đang trong trạng thái loading
-  const isLoading = isPendingUpdate || isPendingRemove || isLoadingAddresses;
+  const isLoading = isPendingUpdate || isPendingRemove || isLoadingAddresses || isLoadingVoucher || isFetchingVoucher;
 
   return (
     <ConfigProvider theme={theme}>
@@ -421,7 +484,6 @@ const CartPage = () => {
                             height: "auto", 
                             color: "#00a551"
                           }}
-                          disabled={!addressData?.addresses?.length}
                         >
                           Chọn địa chỉ
                         </Button>
@@ -444,17 +506,99 @@ const CartPage = () => {
                     </div>
                   </CustomerInfoSection>
 
+                  {/* Voucher section */}
+                  <div style={{ 
+                    marginBottom: "20px", 
+                    padding: "15px", 
+                    backgroundColor: "#fff", 
+                    borderRadius: "8px",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.1)"
+                  }}>
+                    <div style={{ 
+                      display: "flex", 
+                      alignItems: "center", 
+                      gap: "10px", 
+                      marginBottom: "5px" 
+                    }}>
+                      <Input
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value)}
+                        placeholder="Nhập mã giảm giá"
+                        style={{ 
+                          flex: 1,
+                          borderColor: "#e0e0e0"
+                        }}
+                        disabled={!!appliedVoucherCode}
+                      />
+                      {!appliedVoucherCode ? (
+                        <Button
+                          type="primary"
+                          onClick={handleApplyVoucher}
+                          loading={isLoadingVoucher || isFetchingVoucher}
+                          style={{ 
+                            backgroundColor: "#00a551",
+                            height: "36px",
+                            fontSize: "14px",
+                            fontWeight: "500"
+                          }}
+                        >
+                          Áp dụng
+                        </Button>
+                      ) : (
+                        <Button
+                          danger
+                          onClick={handleRemoveVoucher}
+                          style={{ 
+                            height: "36px",
+                            fontSize: "14px",
+                            fontWeight: "500"
+                          }}
+                        >
+                          Hủy
+                        </Button>
+                      )}
+                    </div>
+                    {appliedVoucherCode && discountPrice > 0 && (
+                      <div style={{ 
+                        marginTop: "8px", 
+                        fontSize: "13px", 
+                        color: "#00a551"
+                      }}>
+                        Áp dụng mã "{appliedVoucherCode}" thành công!
+                      </div>
+                    )}
+                    {appliedVoucherCode && discountPrice === 0 && (
+                      <div style={{ 
+                        marginTop: "8px", 
+                        fontSize: "13px", 
+                        color: "#ff4d4f"
+                      }}>
+                        Đơn hàng không đủ điều kiện áp dụng mã này.
+                      </div>
+                    )}
+                  </div>
+
                   <WrapperTotal>
                     <span style={{ fontSize: "16px" }}>Tạm tính</span>
                     <span style={{ fontSize: "16px", fontWeight: "700" }}>{convertPrice(priceMemo)}</span>
                   </WrapperTotal>
+                  {discountPrice > 0 && (
+                    <WrapperTotal>
+                      <span style={{ fontSize: "16px", color: "#00a551" }}>Giảm giá</span>
+                      <span style={{ fontSize: "16px", fontWeight: "700", color: "#00a551" }}>
+                        -{convertPrice(discountPrice)}
+                      </span>
+                    </WrapperTotal>
+                  )}
                   <WrapperTotal>
                     <span style={{ fontSize: "16px" }}>Phí vận chuyển</span>
                     <span style={{ fontSize: "16px", fontWeight: "700" }}>{convertPrice(deliveryPriceMemo)}</span>
                   </WrapperTotal>
                   <WrapperTotal>
                     <span style={{ fontSize: "18px", fontWeight: "600" }}>Tổng tiền</span>
-                    <span style={{ fontSize: "20px", fontWeight: "700", color: "#ff0000" }}>{convertPrice(totalPriceMemo)}</span>
+                    <span style={{ fontSize: "20px", fontWeight: "700", color: "#ff0000" }}>
+                      {convertPrice(finalPriceMemo)}
+                    </span>
                   </WrapperTotal>
                   <Button
                     type="primary"
@@ -531,16 +675,7 @@ const CartPage = () => {
                 ))
               ) : (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
-                  <p>Bạn chưa có địa chỉ nào.</p>
-                  <Button 
-                    type="primary" 
-                    onClick={() => {
-                      setIsAddressListModalOpen(false);
-                      handleAddNewAddress();
-                    }}
-                  >
-                    Thêm địa chỉ mới
-                  </Button>
+                  <p style={{ fontSize: '16px', color: '#777777' }}>Bạn chưa có địa chỉ nào.</p>
                 </div>
               )}
             </Radio.Group>

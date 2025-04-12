@@ -305,11 +305,11 @@ const VoucherPage = () => {
                   
                   <Row gutter={[16, 16]} style={{ marginTop: '15px' }}>
                     <Col span={12}>
-                      <Text style={{ color: '#8c8c8c' }}>Ngày bắt đầu:</Text>
+                      <Text style={{ color: '#8c8c8c' }}>Thời gian bắt đầu:</Text>
                       <div>{formatDate(selectedVoucher.startDate)}</div>
                     </Col>
                     <Col span={12}>
-                      <Text style={{ color: '#8c8c8c' }}>Ngày kết thúc:</Text>
+                      <Text style={{ color: '#8c8c8c' }}>Thời gian kết thúc:</Text>
                       <div>{formatDate(selectedVoucher.endDate)}</div>
                     </Col>
                   </Row>

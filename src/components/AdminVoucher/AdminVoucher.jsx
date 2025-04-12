@@ -311,6 +311,7 @@ const AdminVoucher = () => {
                 parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
                 placeholder="Nhập giá trị giảm"
                 min={0}
+                max={discountType === 'percentage' ? 100 : undefined}
                 addonAfter={<span style={{color: '#CD3238', fontWeight: 'bold'}}>{discountType === 'fixed' ? 'đ' : '%'}</span>}
               />
             </Form.Item>

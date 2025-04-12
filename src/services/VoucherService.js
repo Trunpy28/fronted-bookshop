@@ -32,6 +32,11 @@ export const getVoucherDetails = async (id) => {
   return response.data;
 };
 
+export const getVoucherByCode = async (code) => {
+  const response = await axios.get(`${API_URL}/getByCode/${code}`);
+  return response.data;
+};
+
 export const updateVoucher = async (id, data, token) => {
   const response = await axiosJWT.put(`${API_URL}/update/${id}`, data, {
     headers: {
@@ -52,6 +57,8 @@ export const deleteVoucher = async (id, token) => {
 };
 
 export const applyVoucher = async (data, token) => {
+  console.log(data);
+  
   const response = await axiosJWT.post(`${API_URL}/apply`, data, {
     headers: {
       Authorization: `Bearer ${token}`,
