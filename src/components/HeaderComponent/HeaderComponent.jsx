@@ -215,8 +215,11 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
                     style={{
                       fontSize: "16px",
                       cursor: "pointer",
-                      maxWidth: "100%",
+                      maxWidth: "150px",
                       overflow: "hidden",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 1,
+                      WebkitBoxOrient: "vertical",
                       textOverflow: "ellipsis",
                       textAlign: "center",
                     }}

@@ -8,7 +8,7 @@ import { Form, Input, Button } from "antd";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { WrapperButtonSignIn } from "./style";
 import * as UserService from "../../services/UserService";
-import { useMutationHooks } from "../../hooks/useMutationHook";
+import { useMutation } from "@tanstack/react-query";
 import Loading from "../../components/LoadingComponent/Loading";
 import * as message from "../../components/Message/Message";
 import { jwtDecode } from "jwt-decode";
@@ -38,13 +38,13 @@ const SignInPage = () => {
       if (decoded?.id) {
         handleGetDetailsUser(decoded.id, accessToken);
       }
-      // Redirect đến trang chủ hoặc trang bạn muốn
       navigate('/');
     }
   }, [navigate]);
 
-  const mutation = useMutationHooks(async (data) => await UserService.loginUser(data));
-  const { data, isPending, isSuccess, isError } = mutation;
+  const { mutate: mutationSignIn, isPending, isSuccess, isError, data } = useMutation({
+    mutationFn: (data) => UserService.loginUser(data)
+  });
 
   useEffect(() => {
     if (isSuccess && data?.status === "OK") {
@@ -88,7 +88,7 @@ const SignInPage = () => {
   };
 
   const handleSignIn = (e) => {
-    mutation.mutate({
+    mutationSignIn({
       email: email,
       password: password,
     });

@@ -164,6 +164,7 @@ const ProductDetailsComponent = ({ productId }) => {
                           selectedImage === index ? 'border-green-600' : 'border-gray-200'
                         } rounded-lg overflow-hidden w-20 h-28 flex-shrink-0 transition-all hover:border-green-400 flex items-center justify-center`}
                         onClick={() => setSelectedImage(index)}
+                        style={{ width: "80px", height: "110px" }}
                       >
                         <Image
                           src={image}

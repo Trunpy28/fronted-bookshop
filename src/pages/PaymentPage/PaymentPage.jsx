@@ -1,187 +1,89 @@
-import { Form, Radio, message } from "antd";
-import React, { useEffect, useMemo, useState } from "react";
+import { Form, message, Image, Modal } from "antd";
+import React, { useState } from "react";
 import {
   Label,
-  WrapperChangeInfo,
   WrapperInfo,
   WrapperLeft,
-  WrapperRadio,
   WrapperRight,
   WrapperTotal,
+  PaymentMethodWrapper,
+  PaymentOptionCard,
+  QRCodeWrapper,
+  PaymentInstructions
 } from "./style";
-import {} from "@ant-design/icons";
+import { CheckOutlined, InfoCircleOutlined } from "@ant-design/icons";
 
 import ButtonComponent from "../../components/ButtonComponent/ButtonComponent";
 import { useDispatch, useSelector } from "react-redux";
-import { clearOrder } from "../../redux/slices/orderSlice";
+import { resetCart } from "../../redux/slices/cartSlice";
 import { useLocation, useNavigate } from "react-router-dom";
 import { convertPrice } from "../../utils";
-import ModalComponent from "../../components/ModalComponent/ModalComponent";
-import InputComponent from "../../components/InputComponent/InputComponent";
-import { useMutationHooks } from "../../hooks/useMutationHook";
 import * as OrderService from "../../services/OrderService";
 import Loading from "../../components/LoadingComponent/Loading";
-import { orderConstant } from "../../constant";
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
 import {
   capturePayPalOrder,
   createPayPalOrder,
 } from "../../services/PaypalService";
 import { useMutation } from "@tanstack/react-query";
+import QRCodeImage from "../../assets/images/QRCode.jpg";
 
 const PaymentPage = () => {
-  const order = useSelector((state) => state.order);
   const user = useSelector((state) => state.user);
   const location = useLocation();
+  const { shippingAddress, voucherCode, totalPrice } = location?.state || {};
+  const [showQRModal, setShowQRModal] = useState(false);
 
-  const [isOpenModalUpdateInfo, setIsOpenModalUpdateInfo] = useState(false);
-  const [stateUserDetails, setStateUserDetails] = useState({
-    name: location?.state?.stateUserDetails?.name,
-    phone: location?.state?.stateUserDetails?.phone,
-    address: location?.state?.stateUserDetails?.address,
+  const [stateUserDetails] = useState({
+    name: shippingAddress?.name || user?.name,
+    phone: shippingAddress?.phone || user?.phone,
+    address: shippingAddress?.address ? 
+      `${shippingAddress.address.detailedAddress}, ${shippingAddress.address.ward}, ${shippingAddress.address.district}, ${shippingAddress.address.city}` 
+      : user?.address,
   });
 
-  const [delivery, setDelivery] = useState("save-money");
-  const [payment, setPayment] = useState("later_money");
+  const [payment, setPayment] = useState("COD");
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const mutationAddOrder = useMutationHooks(async (data) => {
-    const { token, ...rests } = data;
-    const res = await OrderService.createOrder(token, { ...rests });
-    return res;
-  });
-
-  const [form] = Form.useForm();
-
-  useEffect(() => {
-    if (isOpenModalUpdateInfo) {
-      form.setFieldsValue(stateUserDetails);
-    }
-  }, [form, isOpenModalUpdateInfo]);
-
-  const handleChangeInfo = () => {
-    setIsOpenModalUpdateInfo(true);
-  };
-
-  const priceMemo = useMemo(() => {
-    const result = order?.orderItemsSelected?.reduce((total, current) => {
-      return total + current?.price * current?.amount;
-    }, 0);
-    return result;
-  }, [order]);
-
-  const deliveryPriceMemo = useMemo(() => {
-    let deliveryPrice = 0;
-    if (priceMemo >= 100000 && priceMemo < 200000) {
-      deliveryPrice = 20000;
-    } else if (priceMemo >= 200000 && priceMemo < 500000) {
-      deliveryPrice = 10000;
-    } else if (priceMemo >= 500000 || order?.orderItemsSelected?.length === 0) {
-      deliveryPrice = 0;
-    } else {
-      deliveryPrice = 25000;
-    }
-    return deliveryPrice + orderConstant.shippingAdd[delivery];
-  }, [priceMemo, delivery]);
-
-  const totalPriceMemo = useMemo(() => {
-    return Number(priceMemo) + Number(deliveryPriceMemo);
-  }, [priceMemo, deliveryPriceMemo]);
-
-  const handleAddOrder = async () => {
-    if (
-      user?.access_token &&
-      order?.orderItemsSelected &&
-      user?.name &&
-      user?.address &&
-      user?.phone &&
-      priceMemo &&
-      user?.id
-    ) {
-      try {
-        const result = await mutationAddOrder.mutateAsync({
-          token: user?.access_token,
-          orderItems: order?.orderItemsSelected,
-          fullName: stateUserDetails?.name,
-          address: stateUserDetails?.address,
-          phone: stateUserDetails?.phone,
-          deliveryMethod: delivery,
-          paymentMethod: payment,
-          itemsPrice: priceMemo,
-          shippingPrice: deliveryPriceMemo,
-          totalPrice: totalPriceMemo,
-          user: user?.id,
-          email: user?.email,
-        });
-
-        return result; // Trả về dữ liệu để dùng tiếp trong PayPal
-      } catch (error) {
-        console.error("Error adding order:", error);
-        message.error("Đặt hàng thất bại!");
-      }
-    }
-  };
-
-  const {
-    isPending: isLoadingAddOrder,
-    data: dataAdd,
-    isSuccess,
-    isError,
-  } = mutationAddOrder;
-
-  useEffect(() => {
-    if (isSuccess && dataAdd?.status === "OK") {
+  const { mutate: createOrderMutation, isPending: isLoadingCreateOrder } = useMutation({
+    mutationFn: (data) => OrderService.createOrder(data),
+    onSuccess: (data) => {
       message.success("Đặt hàng thành công!");
-      const arrayOrdered = [];
-      order?.orderItemsSelected?.forEach((element) => {
-        arrayOrdered.push(element.product);
-      });
-
-      dispatch(clearOrder({ listChecked: arrayOrdered }));
+      dispatch(resetCart());
       navigate("/order-success", {
         state: {
-          delivery,
-          payment,
-          order: order?.orderItemsSelected,
-          tempPrice: priceMemo,
-          shippingPrice: deliveryPriceMemo,
-          totalPrice: totalPriceMemo,
-          createdAt: dataAdd?.data?.createdAt,
+          order: data.data
         },
       });
-    } else if (isError || dataAdd?.status === "ERR") {
-      message.error("Đặt hàng thất bại! " + dataAdd?.message);
+    },
+    onError: (error) => {
+      message.error("Đặt hàng thất bại: " + (error?.response?.data?.message || "Có lỗi xảy ra!"));
     }
-  }, [isSuccess, isError]);
+  });
 
-  const handleCancelUpdate = () => {
-    setIsOpenModalUpdateInfo(false);
-    setStateUserDetails({
-      name: user?.name,
-      phone: user?.phone,
-      address: user?.address,
-    });
+  const handleAddOrder = () => {
+    if (user?.access_token && totalPrice) {
+      const orderData = {
+        paymentMethod: payment,
+        voucherCode: voucherCode || null,
+        fullName: stateUserDetails.name,
+        phone: stateUserDetails.phone,
+        address: stateUserDetails.address,
+        token: user?.access_token
+      };
+      
+      createOrderMutation(orderData);
+    } else {
+      message.error("Vui lòng đăng nhập để tiếp tục!");
+    }
   };
 
-  const handleUpdateInfoUser = () => {
-    setIsOpenModalUpdateInfo(false);
-  };
-
-  const handleOnchangeDetails = (e) => {
-    setStateUserDetails({
-      ...stateUserDetails,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleDelivery = (e) => {
-    setDelivery(e.target.value);
-  };
-
-  const handlePayment = (e) => {
-    setPayment(e.target.value);
+  const showQRCodeModal = () => {
+    if (payment === 'COD') {
+      setShowQRModal(true);
+    }
   };
 
   //Phần xử lý cho paypal
@@ -196,8 +98,6 @@ const PaymentPage = () => {
 
   const capturePayPalOrderMutation = useMutation({
     mutationFn: (data) => {
-      console.log("capture data", data);
-      
       return capturePayPalOrder(data);
     },
     onSuccess: () => {
@@ -209,24 +109,13 @@ const PaymentPage = () => {
   });
 
   const handleCreatePayPalOrder = async () => {
-    if (
-      user?.access_token &&
-      order?.orderItemsSelected &&
-      user?.name &&
-      user?.address &&
-      user?.phone &&
-      priceMemo &&
-      user?.id
-    ) {
+    if (user?.access_token && totalPrice && user?.id) {
       const data = await createPayPalOrderMutation.mutateAsync({
-        amount: totalPriceMemo,
+        amount: totalPrice,
         currency: "USD",
         accessToken: user?.access_token,
         userId: user?.id,
       });
-
-      console.log("paymentId ", data.id);
-      
       
       return data.id;
     }
@@ -234,16 +123,31 @@ const PaymentPage = () => {
 
   const handleApprovePayPalOrder = async (data) => {
     try {
-      const orderData = await handleAddOrder(); // Chờ xử lý đặt hàng xong
-      console.log("approve orderData ", orderData);
-      console.log("approve data ", data);
+      const orderData = {
+        paymentMethod: 'PAYPAL',
+        voucherCode: voucherCode || null,
+        fullName: stateUserDetails.name,
+        phone: stateUserDetails.phone,
+        address: stateUserDetails.address,
+        token: user?.access_token
+      };
       
-      if (orderData?.status === "OK") {
+      const orderResult = await OrderService.createOrder(orderData);
+      
+      if (orderResult?.status === "OK") {
         await capturePayPalOrderMutation.mutateAsync({
           paymentId: data.orderID,
-          orderId: orderData.data._id,
+          orderId: orderResult.data._id,
           accessToken: user?.access_token,
           userId: user?.id,
+        });
+        
+        message.success("Đặt hàng thành công!");
+        dispatch(resetCart());
+        navigate("/order-success", {
+          state: {
+            order: orderResult.data
+          },
         });
       } else {
         message.error("Không thể tạo đơn hàng để thanh toán PayPal!");
@@ -255,140 +159,135 @@ const PaymentPage = () => {
 
   return (
     <div style={{ background: "#f5f5fa", with: "100%", padding: "30px 15vw" }}>
-      <Loading isLoading={isLoadingAddOrder}>
+      <Loading isLoading={isLoadingCreateOrder || createPayPalOrderMutation.isPending || capturePayPalOrderMutation.isPending}>
         <div>
           <h3
             style={{
               fontWeight: "bold",
-              fontSize: "18px",
-              marginBottom: "16px",
+              fontSize: "28px",
+              marginBottom: "20px",
+              color: "#00a551"
             }}
           >
             Thanh toán
           </h3>
-          <div style={{ display: "flex", justifyContent: "center" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "30px" }}>
             <WrapperLeft>
               <WrapperInfo>
                 <div>
-                  <Label>Chọn phương thức giao hàng</Label>
-                  <WrapperRadio onChange={handleDelivery} value={delivery}>
-                    <Radio value="save-money">Giao hàng tiết kiệm</Radio>
-                    <Radio value="fast">
-                      <span style={{ color: "#ea8500", fontWeight: "bold" }}>
-                        FAST
-                      </span>{" "}
-                      Giao hàng nhanh{" "}
-                      <span
-                        style={{
-                          fontSize: "16px",
-                          width: "30%",
-                          textAlign: "center",
-                          color: "#CD3238",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        +10K
-                      </span>
-                    </Radio>
-                  </WrapperRadio>
-                </div>
-              </WrapperInfo>
-              <WrapperInfo>
-                <div>
                   <Label>Chọn phương thức thanh toán</Label>
-                  <WrapperRadio onChange={handlePayment} value={payment}>
-                    <Radio value="later_money">
-                      {" "}
-                      Thanh toán tiền mặt khi nhận hàng
-                    </Radio>
-                    <Radio value="paypal"> Thanh toán tiền bằng paypal</Radio>
-                  </WrapperRadio>
+                  <PaymentMethodWrapper>
+                    <PaymentOptionCard 
+                      isSelected={payment === 'COD'} 
+                      onClick={() => setPayment('COD')}
+                    >
+                      <div className="payment-icon">
+                        <Image 
+                          src={QRCodeImage} 
+                          width={payment === 'COD' ? 80 : 60} 
+                          preview={false}
+                          onClick={payment === 'COD' ? showQRCodeModal : undefined}
+                          style={payment === 'COD' ? { cursor: 'pointer' } : {}}
+                        />
+                      </div>
+                      <div className="payment-info">
+                        <h4>Thanh toán khi nhận hàng (COD)</h4>
+                        <p>Thanh toán bằng tiền mặt khi nhận hàng</p>
+                        {payment === 'COD' && (
+                          <p className="tap-qr">
+                            <InfoCircleOutlined /> Nhấp vào mã QR để xem chi tiết
+                          </p>
+                        )}
+                      </div>
+                      {payment === 'COD' && <CheckOutlined className="check-icon" />}
+                    </PaymentOptionCard>
+                    
+                    <PaymentOptionCard 
+                      isSelected={payment === 'VNPAY'} 
+                      onClick={() => setPayment('VNPAY')}
+                      disabled
+                    >
+                      <div className="payment-icon">
+                        <img 
+                          src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Icon-VNPAY-QR.png" 
+                          width={payment === 'VNPAY' ? 80 : 60} 
+                          alt="VNPAY"
+                        />
+                      </div>
+                      <div className="payment-info">
+                        <h4>Thanh toán qua VNPAY</h4>
+                        <p>Quét mã QR để thanh toán (Đang phát triển)</p>
+                      </div>
+                      {payment === 'VNPAY' && <CheckOutlined className="check-icon" />}
+                    </PaymentOptionCard>
+                    
+                    <PaymentOptionCard 
+                      isSelected={payment === 'PAYPAL'} 
+                      onClick={() => setPayment('PAYPAL')}
+                    >
+                      <div className="payment-icon">
+                        <img 
+                          src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_111x69.jpg" 
+                          width={payment === 'PAYPAL' ? 100 : 80} 
+                          alt="PayPal"
+                        />
+                      </div>
+                      <div className="payment-info">
+                        <h4>Thanh toán qua PayPal</h4>
+                        <p>Sử dụng thẻ tín dụng quốc tế hoặc tài khoản PayPal</p>
+                      </div>
+                      {payment === 'PAYPAL' && <CheckOutlined className="check-icon" />}
+                    </PaymentOptionCard>
+                  </PaymentMethodWrapper>
                 </div>
               </WrapperInfo>
             </WrapperLeft>
             <WrapperRight>
               <div style={{ width: "100%" }}>
                 <WrapperInfo>
-                  <div style={{ display: "flex", gap: "5px" }}>
-                    <div style={{ color: "#333333", width: "80px" }}>
-                      Địa chỉ:{" "}
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                    <div style={{ color: "#333333", fontWeight: "bold", minWidth: "100px", fontSize: "16px" }}>
+                      Địa chỉ:
                     </div>
-                    <div>
-                      {stateUserDetails?.address && (
-                        <div
-                          style={{ fontWeight: "bold", marginBottom: "10px" }}
-                        >
-                          {stateUserDetails?.address}
-                        </div>
-                      )}
-                      <WrapperChangeInfo
-                        onClick={handleChangeInfo}
-                        style={{ cursor: "pointer" }}
-                      >
-                        Sửa thông tin
-                      </WrapperChangeInfo>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "16px", fontWeight: "bold" }}>{stateUserDetails?.name}</div> 
+                      <div style={{ fontSize: "16px" }}>{stateUserDetails?.phone}</div>
+                      <div style={{ color: "#666", lineHeight: "1.5", fontSize: "15px" }}>
+                        {stateUserDetails?.address}
+                      </div>
                     </div>
                   </div>
                 </WrapperInfo>
-                <WrapperInfo>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <span style={{ color: "#333333" }}>Tạm tính</span>
-                    <span
-                      style={{
-                        color: "#000",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {convertPrice(priceMemo)}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginTop: "5px",
-                    }}
-                  >
-                    <span style={{ color: "#333333" }}>Phí giao hàng</span>
-                    <span
-                      style={{
-                        color: "#000",
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {convertPrice(deliveryPriceMemo)}
-                    </span>
-                  </div>
-                </WrapperInfo>
+                
+                {voucherCode && (
+                  <WrapperInfo>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ color: "#333333", fontSize: "16px" }}>Mã voucher đã áp dụng:</span>
+                      <span style={{ fontWeight: "bold", color: "#00a551", fontSize: "16px" }}>{voucherCode}</span>
+                    </div>
+                  </WrapperInfo>
+                )}
+                
                 <WrapperTotal>
-                  <span>Tổng tiền</span>
-                  <span style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "18px" }}>Tổng tiền</span>
+                  <span>
                     <span
                       style={{
                         color: "rgb(254, 56, 52)",
-                        fontSize: "24px",
+                        fontSize: "28px",
                         fontWeight: "bold",
+                        display: "block",
+                        textAlign: "right"
                       }}
                     >
-                      {convertPrice(totalPriceMemo)}
-                    </span>
-                    <span style={{ color: "#000", fontSize: "11px" }}>
-                      (Đã bao gồm VAT nếu có)
+                      {convertPrice(totalPrice)}
                     </span>
                   </span>
                 </WrapperTotal>
               </div>
-              {payment === "paypal" ? (
-                <div style={{ width: "320px" }}>
+              
+              {payment === 'PAYPAL' ? (
+                <div style={{ width: "100%", marginTop: "20px" }}>
                   <PayPalScriptProvider
                     options={{
                       clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID,
@@ -399,24 +298,26 @@ const PaymentPage = () => {
                     <PayPalButtons
                       createOrder={handleCreatePayPalOrder}
                       onApprove={handleApprovePayPalOrder}
+                      style={{ layout: "horizontal" }}
                     />
                   </PayPalScriptProvider>
                 </div>
               ) : (
                 <ButtonComponent
-                  onClick={async () => { await handleAddOrder(); }}
+                  onClick={handleAddOrder}
                   size={40}
                   styleButton={{
-                    background: "rgb(255, 57, 69)",
-                    height: "48px",
-                    width: "320px",
+                    background: "#00a551",
+                    height: "54px",
+                    width: "100%",
                     border: "none",
                     borderRadius: "4px",
+                    marginTop: "20px"
                   }}
                   textbutton="Đặt hàng"
                   styleTextButton={{
                     color: "#fff",
-                    fontSize: "15px",
+                    fontSize: "18px",
                     fontWeight: "700",
                   }}
                 ></ButtonComponent>
@@ -425,65 +326,28 @@ const PaymentPage = () => {
           </div>
         </div>
       </Loading>
-      <ModalComponent
-        title="Cập nhật thông tin giao hàng"
-        open={isOpenModalUpdateInfo}
-        onCancel={handleCancelUpdate}
-        onOk={handleUpdateInfoUser}
+
+      <Modal
+        title={<div style={{ fontSize: "20px", fontWeight: "bold", color: "#00a551" }}>Chi tiết thanh toán</div>}
+        open={showQRModal}
+        onCancel={() => setShowQRModal(false)}
+        footer={null}
+        width={600}
       >
-        <Form
-          name="basic"
-          labelCol={{
-            span: 6,
-          }}
-          wrapperCol={{
-            span: 18,
-          }}
-          style={{
-            maxWidth: 600,
-          }}
-          // onFinish={onUpdateUser}
-          initialValues={{
-            remember: true,
-          }}
-          autoComplete="on"
-          form={form}
-        >
-          <Form.Item
-            label="Tên"
-            name="name"
-            rules={[{ required: true, message: "Hãy nhập tên của bạn!" }]}
-          >
-            <InputComponent
-              value={stateUserDetails["name"]}
-              onChange={handleOnchangeDetails}
-              name="name"
-            />
-          </Form.Item>
-          <Form.Item
-            label="Số điện thoại"
-            name="phone"
-            rules={[{ required: true, message: "Hãy nhập số điện thoại!" }]}
-          >
-            <InputComponent
-              value={stateUserDetails.phone}
-              onChange={handleOnchangeDetails}
-              name="phone"
-            />
-          </Form.Item>
-          <Form.Item
-            label="Địa chỉ"
-            name="address"
-            rules={[{ required: true, message: "Hãy nhập địa chỉ của bạn!" }]}
-          >
-            <InputComponent
-              value={stateUserDetails.address}
-              onChange={handleOnchangeDetails}
-              name="address"
-            />
-          </Form.Item>
-        </Form>
-      </ModalComponent>
+        <QRCodeWrapper>
+          <Image src={QRCodeImage} width={250} preview={false} />
+          <PaymentInstructions>
+            <h3>Hướng dẫn thanh toán:</h3>
+            <p><strong>Số tiền:</strong> {convertPrice(totalPrice)}</p>
+            <p><strong>Người nhận:</strong> Phạm Tuấn Trung</p>
+            <p><strong>Số điện thoại:</strong> 0975853235</p>
+            <p><strong>Nội dung chuyển khoản:</strong> {stateUserDetails.name + "-" + stateUserDetails.phone + " Thanh toan don hang"}</p>
+            <div className="payment-note">
+              <InfoCircleOutlined /> <strong>Lưu ý:</strong> Sau khi chuyển khoản, vui lòng gửi ảnh chụp màn hình xác nhận qua Zalo: <strong>0975853235</strong> (Phạm Tuấn Trung)
+            </div>
+          </PaymentInstructions>
+        </QRCodeWrapper>
+      </Modal>
     </div>
   );
 };

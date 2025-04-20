@@ -22,22 +22,13 @@ import InputComponent from "../InputComponent/InputComponent";
 import { WrapperUploadFile } from "../../pages/ProfilePage/style";
 import { getBase64 } from "../../utils";
 import * as UserService from "../../services/UserService";
-import { useMutationHooks } from "../../hooks/useMutationHook";
 import Loading from "../LoadingComponent/Loading";
 import * as message from "../../components/Message/Message";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import DrawerComponent from "../DrawerComponent/DrawerComponent";
 import { useSelector } from "react-redux";
 import ModalComponent from "../ModalComponent/ModalComponent";
 import CountUp from "react-countup";
-import addressVietNam from "../../constants/addressConstants";
-
-const { Option } = Select;
-
-const addressFormItemLayout = {
-  labelCol: { span: 6 },
-  wrapperCol: { span: 18 },
-};
 
 const AdminUser = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,6 +58,7 @@ const AdminUser = () => {
     />
   );
 
+  // Chỉ chứa các thông tin cơ bản khi tạo user mới, không bao gồm địa chỉ
   const [stateUser, setStateUser] = useState({
     name: "",
     email: "",
@@ -74,102 +66,71 @@ const AdminUser = () => {
     confirmPassword: "",
     isAdmin: false,
     phone: "",
-    city: "",
-    district: "",
-    ward: "",
-    detailedAddress: "",
     avatar: "",
   });
 
-  const [districts, setDistricts] = useState([]);
-  const [wards, setWards] = useState([]);
-
+  // Vẫn giữ nguyên thông tin địa chỉ để hiển thị chi tiết
   const [stateUserDetails, setStateUserDetails] = useState({
     name: "",
     email: "",
     isAdmin: false,
     phone: "",
-    address: "",
+    address: "",  // Giữ nguyên thông tin địa chỉ
     avatar: "",
   });
 
   const [form] = Form.useForm();
   const [formDetails] = Form.useForm();
 
-  // Xử lý thay đổi tỉnh/thành phố
-  useEffect(() => {
-    if (stateUser.city) {
-      const selectedCity = addressVietNam.find(c => c.name === stateUser.city);
-      if (selectedCity) {
-        setDistricts(selectedCity.districts);
-        setStateUser(prev => ({ ...prev, district: "", ward: "" }));
-      }
-    }
-  }, [stateUser.city]);
-
-  // Xử lý thay đổi quận/huyện
-  useEffect(() => {
-    if (stateUser.district && districts.length) {
-      const selectedDistrict = districts.find(d => d.name === stateUser.district);
-      if (selectedDistrict) {
-        setWards(selectedDistrict.wards);
-        setStateUser(prev => ({ ...prev, ward: "" }));
-      }
-    }
-  }, [stateUser.district, districts]);
-
-  const mutation = useMutationHooks(async (data) => {
-    const {
-      name,
-      email,
-      password,
-      confirmPassword,
-      isAdmin,
-      phone,
-      city,
-      district,
-      ward,
-      detailedAddress,
-      avatar,
-    } = data;
-    
-    // Tạo đối tượng address từ các thành phần
-    const address = {
-      city,
-      district,
-      ward,
-      detailedAddress
-    };
-    
-    const res = await UserService.signUpUser({
-      name,
-      email,
-      password,
-      confirmPassword,
-      isAdmin,
-      phone,
-      address,
-      avatar,
-    });
-    return res;
+  // Sử dụng useMutation trực tiếp
+  const { mutate: mutationCreateUser, isPending, isSuccess, isError, data } = useMutation({
+    mutationFn: (data) => {
+      const {
+        name,
+        email,
+        password,
+        confirmPassword,
+        isAdmin,
+        phone,
+        avatar,
+      } = data;
+      
+      return UserService.signUpUser({
+        name,
+        email,
+        password,
+        confirmPassword,
+        isAdmin,
+        phone,
+        avatar,
+      });
+    },
   });
 
-  const mutationUpdate = useMutationHooks(async (data) => {
-    const { id, token, ...rests } = data;
-    const res = await UserService.updateUser(id, token, { ...rests });
-    return res;
+  const { 
+    mutate: mutationUpdateUser, 
+    isPending: isLoadingUpdated, 
+    isSuccess: isSuccessUpdated, 
+    isError: isErrorUpdated,
+    data: dataUpdated 
+  } = useMutation({
+    mutationFn: (data) => {
+      const { id, token, ...rests } = data;
+      return UserService.updateUser(id, token, { ...rests });
+    },
   });
 
-  const mutationDeleted = useMutationHooks(async (data) => {
-    const { id, token } = data;
-    const res = await UserService.deleteUser(id, token);
-    return res;
-  });
-
-  const mutationDeletedMany = useMutationHooks(async (data) => {
-    const { token, ...ids } = data;
-    const res = await UserService.deleteManyUser(ids, token);
-    return res;
+  const { 
+    mutate: mutationDeleteUser, 
+    isPending: isLoadingDeleted, 
+    isSuccess: isSuccessDeleted, 
+    isError: isErrorDeleted,
+    data: dataDeleted 
+  } = useMutation({
+    mutationFn: (data) => {
+      const { id, token } = data;
+      return UserService.deleteUser(id, token);
+    },
   });
 
   const getAllUsers = async () => {
@@ -260,7 +221,9 @@ const AdminUser = () => {
       >
         <Input
           ref={searchInput}
-          placeholder={`Search ${dataIndex}`}
+          placeholder={`Tìm ${dataIndex === 'name' ? 'tên' : 
+                        dataIndex === 'email' ? 'email' : 
+                        dataIndex === 'isAdmin' ? 'vai trò' : 'số điện thoại'}`}
           value={selectedKeys[0]}
           onChange={(e) =>
             setSelectedKeys(e.target.value ? [e.target.value] : [])
@@ -321,12 +284,7 @@ const AdminUser = () => {
       />
     ),
     onFilter: (value, record) =>
-      record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()),
-    onFilterDropdownOpenChange: (visible) => {
-      if (visible) {
-        setTimeout(() => searchInput.current?.select(), 100);
-      }
-    },
+      record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
   });
 
   const columns = [
@@ -334,18 +292,22 @@ const AdminUser = () => {
       title: "Tên người dùng",
       dataIndex: "name",
       render: (text) => <a>{text}</a>,
+      ...getColumnSearchProps("name"),
     },
     {
       title: "Email",
       dataIndex: "email",
+      ...getColumnSearchProps("email"),
     },
     {
       title: "Vai trò",
       dataIndex: "isAdmin",
+      ...getColumnSearchProps("isAdmin"),
     },
     {
       title: "SĐT",
       dataIndex: "phone",
+      ...getColumnSearchProps("phone"),
     },
     {
       title: "Địa chỉ",
@@ -370,28 +332,6 @@ const AdminUser = () => {
       };
     });
 
-  const { data, isPending, isSuccess, isError } = mutation;
-  const {
-    data: dataUpdated,
-    isPending: isLoadingUpdated,
-    isSuccess: isSuccessUpdated,
-    isError: isErrorUpdated,
-  } = mutationUpdate;
-
-  const {
-    data: dataDeleted,
-    isPending: isLoadingDeleted,
-    isSuccess: isSuccessDeleted,
-    isError: isErrorDeleted,
-  } = mutationDeleted;
-
-  const {
-    data: dataDeletedMany,
-    isPending: isLoadingDeletedMany,
-    isSuccess: isSuccessDeletedMany,
-    isError: isErrorDeletedMany,
-  } = mutationDeletedMany;
-
   useEffect(() => {
     if (isSuccess && data?.status === "OK") {
       message.success("Thêm tài khoản thành công");
@@ -411,14 +351,6 @@ const AdminUser = () => {
   }, [isSuccessDeleted, isErrorDeleted]);
 
   useEffect(() => {
-    if (isSuccessDeletedMany && dataDeletedMany?.status === "OK") {
-      message.success("Xóa các tài khoản thành công");
-    } else if (isErrorDeletedMany || dataDeletedMany?.status === "ERR") {
-      message.error("Xóa các tài khoản thất bại. ");
-    }
-  }, [isSuccessDeletedMany, isErrorDeletedMany]);
-
-  useEffect(() => {
     if (isSuccessUpdated && dataUpdated?.status === "OK") {
       message.success("Cập nhật tài khoản thành công");
       handleCloseDrawer();
@@ -435,14 +367,8 @@ const AdminUser = () => {
       confirmPassword: "",
       isAdmin: false,
       phone: "",
-      city: "",
-      district: "",
-      ward: "",
-      detailedAddress: "",
       avatar: "",
     });
-    setDistricts([]);
-    setWards([]);
   }, [isModalOpen]);
 
   const handleCloseDrawer = () => {
@@ -470,14 +396,8 @@ const AdminUser = () => {
       confirmPassword: "",
       isAdmin: false,
       phone: "",
-      city: "",
-      district: "",
-      ward: "",
-      detailedAddress: "",
       avatar: "",
     });
-    setDistricts([]);
-    setWards([]);
     form.resetFields();
     setIsModalOpen(false);
   };
@@ -487,7 +407,7 @@ const AdminUser = () => {
   };
 
   const handleDeleteUser = () => {
-    mutationDeleted.mutate(
+    mutationDeleteUser(
       { id: rowSelected, token: user?.access_token },
       {
         onSettled: () => {
@@ -497,15 +417,8 @@ const AdminUser = () => {
     );
   };
 
-  const handleDeleteManyUsers = (ids) => {
-    mutationDeletedMany.mutate(
-      { ids: ids, token: user?.access_token },
-      {
-        onSettled: () => {
-          queryUser.refetch();
-        },
-      }
-    );
+  const handleDeleteManyUsers = () => {
+    message.warning("Tính năng xóa nhiều tài khoản chưa được hỗ trợ");
   };
 
   const handleCancel = () => {
@@ -516,21 +429,15 @@ const AdminUser = () => {
       confirmPassword: "",
       isAdmin: false,
       phone: "",
-      city: "",
-      district: "",
-      ward: "",
-      detailedAddress: "",
       avatar: "",
     });
-    setDistricts([]);
-    setWards([]);
     form.resetFields();
     setIsModalOpen(false);
   };
 
   const onFinish = () => {
     handleOk();
-    mutation.mutate(stateUser, {
+    mutationCreateUser(stateUser, {
       onSettled: () => {
         queryUser.refetch();
       },
@@ -554,27 +461,6 @@ const AdminUser = () => {
     });
   };
 
-  const handleOnChangeCity = (value) => {
-    setStateUser({
-      ...stateUser,
-      city: value,
-    });
-  };
-
-  const handleOnChangeDistrict = (value) => {
-    setStateUser({
-      ...stateUser,
-      district: value,
-    });
-  };
-
-  const handleOnChangeWard = (value) => {
-    setStateUser({
-      ...stateUser,
-      ward: value,
-    });
-  };
-
   const handleOnChangeDetailsRole = (value) => {
     setStateUserDetails({
       ...stateUserDetails,
@@ -593,7 +479,7 @@ const AdminUser = () => {
   };
 
   const onUpdateUser = () => {
-    mutationUpdate.mutate(
+    mutationUpdateUser(
       {
         id: rowSelected,
         token: user?.access_token,
@@ -805,111 +691,6 @@ const AdminUser = () => {
                 name="phone"
               />
             </Form.Item>
-
-            <div
-              style={{
-                marginBottom: "20px",
-                border: "1px solid #f0f0f0",
-                borderRadius: "5px",
-                padding: "20px",
-                backgroundColor: "#fafafa",
-              }}
-            >
-              <div style={{ fontWeight: "bold", marginBottom: "15px" }}>Địa chỉ</div>
-
-              <Form.Item
-                label="Tỉnh/Thành phố"
-                name="city"
-                rules={[
-                  {
-                    required: false,
-                    message: "Hãy chọn tỉnh/thành phố!",
-                  },
-                ]}
-                {...addressFormItemLayout}
-              >
-                <Select
-                  placeholder="Chọn Tỉnh/Thành phố"
-                  onChange={handleOnChangeCity}
-                  value={stateUser.city || undefined}
-                >
-                  {addressVietNam.map((city) => (
-                    <Option key={city.code} value={city.name}>
-                      {city.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                label="Quận/Huyện"
-                name="district"
-                rules={[
-                  {
-                    required: false,
-                    message: "Hãy chọn quận/huyện!",
-                  },
-                ]}
-                {...addressFormItemLayout}
-              >
-                <Select
-                  placeholder="Chọn Quận/Huyện"
-                  onChange={handleOnChangeDistrict}
-                  value={stateUser.district || undefined}
-                  disabled={!stateUser.city}
-                >
-                  {districts.map((dist) => (
-                    <Option key={dist.code} value={dist.name}>
-                      {dist.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                label="Phường/Xã"
-                name="ward"
-                rules={[
-                  {
-                    required: false,
-                    message: "Hãy chọn phường/xã!",
-                  },
-                ]}
-                {...addressFormItemLayout}
-              >
-                <Select
-                  placeholder="Chọn Phường/Xã"
-                  onChange={handleOnChangeWard}
-                  value={stateUser.ward || undefined}
-                  disabled={!stateUser.district}
-                >
-                  {wards.map((ward) => (
-                    <Option key={ward.code} value={ward.name}>
-                      {ward.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                label="Địa chỉ chi tiết"
-                name="detailedAddress"
-                rules={[
-                  {
-                    required: false,
-                    message: "Hãy nhập địa chỉ chi tiết!",
-                  },
-                ]}
-                {...addressFormItemLayout}
-              >
-                <InputComponent
-                  name="detailedAddress"
-                  placeholder="Số nhà, tên đường..."
-                  value={stateUser.detailedAddress}
-                  onChange={handleOnChange}
-                />
-              </Form.Item>
-            </div>
 
             <Form.Item
               label="Vai trò"

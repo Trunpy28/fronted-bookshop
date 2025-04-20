@@ -41,7 +41,7 @@ export const routes =  [
         isPrivate: true
     },
     {
-        path: '/details-order/:id',
+        path: '/details-order/:orderId',
         page: DetailsOrderPage,
         isShowHeader: true,
         isPrivate: true

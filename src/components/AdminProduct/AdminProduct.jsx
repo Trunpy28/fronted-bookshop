@@ -4,7 +4,7 @@ import {
   Button, Card, Col, Form, Input, Row, Select, Space, Statistic, InputNumber, Upload,
 } from "antd";
 import {
-  PlusOutlined, EditOutlined, DeleteOutlined,
+  PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined,
 } from "@ant-design/icons";
 import TableComponent from "../TableComponent/TableComponent";
 import InputComponent from "../InputComponent/InputComponent";
@@ -19,6 +19,7 @@ import { useSelector } from "react-redux";
 import ModalComponent from "../ModalComponent/ModalComponent";
 import CountUp from "react-countup";
 import RichTextEditor from "../RichTextEditor/RichTextEditor";
+import ProductDetailModal from '../ProductDetailModal/ProductDetailModal';
 
 const AdminProduct = () => {
   // State đã tinh gọn
@@ -30,6 +31,8 @@ const AdminProduct = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [fileList, setFileList] = useState([]);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const [createForm] = Form.useForm();
   const [updateForm] = Form.useForm();
@@ -211,6 +214,11 @@ const AdminProduct = () => {
 
   const { data: genres } = queryGenres;
 
+  const handleViewDetails = (product) => {
+    setSelectedProduct(product);
+    setIsDetailModalOpen(true);
+  };
+
   const columns = [
     {
       title: "Mã hàng",
@@ -252,6 +260,10 @@ const AdminProduct = () => {
       title: "Thao tác",
       render: (text, record) => (
         <Space size="middle">
+          <EyeOutlined
+            style={{ color: "blue", fontSize: "30px", cursor: "pointer" }}
+            onClick={() => handleViewDetails(record)}
+          />
           <EditOutlined
             style={{ color: "orange", fontSize: "30px", cursor: "pointer" }}
             onClick={() => handleDetailsProduct(record._id)}
@@ -512,7 +524,7 @@ const AdminProduct = () => {
 
       {/* Drawer chỉnh sửa */}
       <DrawerComponent
-        title="Chi tiết sản phẩm"
+        title="Cập nhật sản phẩm"
         isOpen={isOpenDrawer}
         onClose={handleCloseDrawer}
         width="50%"
@@ -679,6 +691,13 @@ const AdminProduct = () => {
           <div>Bạn có chắc muốn xóa sản phẩm này không?</div>
         </Loading>
       </ModalComponent>
+
+      <ProductDetailModal
+        product={selectedProduct}
+        visible={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        genres={genres}
+      />
     </div>
   );
 };

@@ -8,7 +8,7 @@ import { Form, Input } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 import { WrapperButtonSignUp } from "./style";
 import * as UserService from '../../services/UserService';
-import { useMutationHooks } from "../../hooks/useMutationHook";
+import { useMutation } from "@tanstack/react-query";
 import Loading from "../../components/LoadingComponent/Loading";
 import * as message from'../../components/Message/Message';
 
@@ -19,11 +19,9 @@ const SignUpPage = () => {
 
   const navigate = useNavigate();
 
-  const mutation = useMutationHooks(
-    data => UserService.signUpUser(data)
-  );
-
-  const {data, isPending, isSuccess,isError, error} = mutation
+  const { mutate: mutationSignUp, isPending, isSuccess, isError, data, error } = useMutation({
+    mutationFn: (data) => UserService.signUpUser(data)
+  });
 
   useEffect(() => {
     if (isSuccess && data?.status === 'OK') {
@@ -50,7 +48,7 @@ const SignUpPage = () => {
   };
 
   const handleSignUp = (e) => {
-    mutation.mutate({
+    mutationSignUp({
       email: email,
       password: password,
       confirmPassword: confirmPassword

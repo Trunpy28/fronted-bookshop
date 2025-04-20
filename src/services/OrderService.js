@@ -1,92 +1,102 @@
 import { axiosJWT } from "./UserService";
 
-const apiUrl = import.meta.env.VITE_API_URL;
+const API_URL = `${import.meta.env.VITE_API_URL}/order`;
 
-export const createOrder = async (access_token, data) => {
-  const res = await axiosJWT.post(
-    `${apiUrl}/order/create/${data.user}`,
-    data,
-    {
+export const createOrder = async (data) => {
+  const { token, ...orderData } = data;
+  try {
+    const response = await axiosJWT.post(`${API_URL}/create`, orderData, {
       headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
-    }
-  );
-  return res.data;
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const getOrdersByUserId = async (id, access_token) => {
-  const res = await axiosJWT.get(
-    `${apiUrl}/order/get-all-orders-details/${id}`,
-    {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
-    }
-  );
-  return res.data;
-};
-
-export const getDetailsOrder = async (id, access_token) => {
-  const res = await axiosJWT.get(
-    `${apiUrl}/order/get-details-order/${id}`,
-    {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
-    }
-  );
-  return res.data;
-};
-
-export const cancelOrder = async (id, access_token, orderItems) => {
-  const res = await axiosJWT.delete(
-    `${apiUrl}/order/cancel-order/${id}`,
-    { data: orderItems },
-    {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
-    }
-  );
-  return res.data;
-};
-
-export const getAllOrder = async (access_token) => {
-  const res = await axiosJWT.get(
-    `${apiUrl}/order/get-all`,
-    {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
-    }
-  );
-  return res.data;
-};
-
-export const updateOrder = async (id, access_token, data) => {
-  const res = await axiosJWT.put(`${apiUrl}/order/update-order/${id}`, data, {
+export const getMyOrders = async (accessToken) => {
+  const response = await axiosJWT.get(`${API_URL}/my-orders`, {
     headers: {
-      Authorization: `Bearer ${access_token}`,
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+  return response.data;
+};
+
+export const getDetailsOrder = async (orderId, accessToken) => {
+  const response = await axiosJWT.get(`${API_URL}/get-details-order/${orderId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+  return response.data;
+};
+
+export const cancelOrder = async (orderId, accessToken) => {
+  const response = await axiosJWT.delete(`${API_URL}/cancel-order/${orderId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+  return response.data;
+};
+
+export const updateOrder = async (id, accessToken, data) => {
+  const res = await axiosJWT.put(`${API_URL}/update-order/${id}`, data, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
     },
   });
   return res.data;
 };
 
-export const deleteOrder = async (id, access_token) => {
-  const res = await axiosJWT.delete(`${apiUrl}/order/delete-order/${id}`, {
+export const deleteOrder = async (id, accessToken) => {
+  const res = await axiosJWT.delete(`${API_URL}/delete-order/${id}`, {
     headers: {
-      Authorization: `Bearer ${access_token}`,
+      Authorization: `Bearer ${accessToken}`,
     },
   });
   return res.data;
 };
 
-export const deleteManyOrder = async (data, access_token) => {
-  const res = await axiosJWT.post(`${apiUrl}/order/delete-many`, data, {
-    headers: {
-      Authorization: `Bearer ${access_token}`,
-    },
+export const updateOrderStatus = async (orderId, accessToken, status) => {
+  const response = await axiosJWT.put(`${API_URL}/update-status/${orderId}`, 
+    { ...status },
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    }
+  );
+  return response.data;
+};
+
+export const getPaginatedOrders = async (accessToken, options) => {
+  // Loại bỏ các tham số rỗng
+  const cleanedOptions = {};
+  Object.keys(options).forEach(key => {
+    // Kiểm tra mảng rỗng
+    if (Array.isArray(options[key]) && options[key].length === 0) {
+      return;
+    }
+    // Kiểm tra chuỗi rỗng
+    if (typeof options[key] === 'string' && options[key].trim() === '') {
+      return;
+    }
+    // Kiểm tra null hoặc undefined
+    if (options[key] === null || options[key] === undefined) {
+      return;
+    }
+    cleanedOptions[key] = options[key];
   });
-  return res.data;
+
+  const response = await axiosJWT.get(`${API_URL}/get-orders`, {
+    params: cleanedOptions,
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+  return response.data;
 };

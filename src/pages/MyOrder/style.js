@@ -1,4 +1,131 @@
-import styled  from "styled-components";
+import styled from "styled-components";
+
+export const WrapperContainer = styled.div`
+  width: 100%;
+  padding: 20px 15vw;
+  background-color: #f5f5fa;
+  min-height: 100vh;
+`;
+
+export const WrapperListOrder = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+`;
+
+export const WrapperItemOrder = styled.div`
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+`;
+
+export const WrapperHeaderItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #f0f0f0;
+`;
+
+export const WrapperInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+export const WrapperLabel = styled.span`
+  color: #666;
+  font-size: 16px;
+  min-width: 150px;
+`;
+
+export const WrapperValue = styled.span`
+  color: #333;
+  font-size: 16px;
+  font-weight: 500;
+`;
+
+export const WrapperStatus = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 16px;
+  font-weight: 500;
+  margin-top: 5px;
+`;
+
+export const WrapperFooterItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #f0f0f0;
+`;
+
+export const ProductItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+`;
+
+export const ProductImage = styled.img`
+  width: 80px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 4px;
+`;
+
+export const ProductInfo = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+export const ProductName = styled.div`
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+`;
+
+export const ProductQuantity = styled.div`
+  color: #666;
+  margin-top: 5px;
+  font-size: 16px;
+`;
+
+export const ProductPrice = styled.div`
+  color: #ff4d4f;
+  font-weight: 600;
+  font-size: 18px;
+`;
+
+export const TotalPrice = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+export const TotalLabel = styled.span`
+  color: #666;
+  font-size: 18px;
+`;
+
+export const TotalValue = styled.span`
+  color: #ff4d4f;
+  font-size: 22px;
+  font-weight: 600;
+`;
+
+export const ActionButtons = styled.div`
+  display: flex;
+  gap: 10px;
+`;
 
 export const WrapperStyleHeader = styled.div`
   background: rgb(255, 255, 255);
@@ -26,65 +153,6 @@ export const WrapperStyleHeaderDilivery = styled.div`
   margin-bottom: 4px;
 `
 
-export const WrapperContainer = styled.div`
-  background-color: #f5f5fa;
-  max-width: 100vw;
-`
-
 export const WrapperLeft = styled.div`
   width: 910px;
-`
-
-export const WrapperListOrder = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding-top: 20px;
-  width: 70vw;
-  min-width: 50vw;
-`
-export const WrapperFooterItem = styled.div`
-  display: flex;
-  flex-direction : column;
-  gap: 20px;
-  border-top: 1px solid rgb(235, 235, 240);
-  width: 100%;
-  align-items:flex-end;
-  padding-top: 10px;
-  font-size: 16px;
-`
-
-export const WrapperHeaderItem = styled.div`
-  display: flex;
-  align-items: center;
-  height: 100%;
-  width: 100%;
-  padding-bottom: 15px;
-  padding-top: 15px;
-  border-bottom: 1px solid rgb(235, 235, 240);
-`
-
-export const WrapperItemOrder = styled.div`
-  display: flex;
-  align-items: center;
-  padding: 9px 16px;
-  background: #fff;
-  margin-top: 12px;
-  flex-direction: column;
-  width: 100%;
-  margin: 0 auto;
-  background: #fff;
-  border-radius: 6px;
-  box-shadow: 0 12px 12px #ccc;
-`
-
-export const WrapperStatus = styled.div`
-  display:flex;
-  align-item:flex-start;
-  width: 100%;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgb(235, 235, 240);
-  flex-direction:column;
-  font-size: 16px;
-  margin-top: 10px;
 `

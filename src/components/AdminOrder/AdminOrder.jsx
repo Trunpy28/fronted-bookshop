@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { WrapperHeader } from "./style";
 import {
   Button,
@@ -10,16 +10,22 @@ import {
   Row,
   Statistic,
   Card,
+  Pagination,
+  Tag,
+  Modal,
+  Tooltip,
+  Radio
 } from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
+  EyeOutlined
 } from "@ant-design/icons";
 import TableComponent from "../TableComponent/TableComponent";
 import { convertPrice, timeTranform } from "../../utils";
 import * as OrderService from "../../services/OrderService";
-import { useMutationHooks } from "../../hooks/useMutationHook";
+import { useMutation } from "@tanstack/react-query";
 import Loading from "../LoadingComponent/Loading";
 import * as message from "../Message/Message";
 import { useQuery } from "@tanstack/react-query";
@@ -27,48 +33,33 @@ import DrawerComponent from "../DrawerComponent/DrawerComponent";
 import { useSelector } from "react-redux";
 import ModalComponent from "../ModalComponent/ModalComponent";
 import { orderConstant } from "../../constant";
-import CountUp from "react-countup";
+import OrderDetailsComponent from "../OrderDetailsComponent/OrderDetailsComponent";
 
 const AdminOrder = () => {
   const [rowSelected, setRowSelected] = useState("");
   const [isOpenDrawer, setIsOpenDrawer] = useState(false);
-  const [isLoadingUpdate, setIsLoadingUpdate] = useState(false);
   const [isModalOpenDelete, setIsModalOpenDelete] = useState(false);
+  const [isModalUpdateStatus, setIsModalUpdateStatus] = useState(false);
+  const [selectedStatusType, setSelectedStatusType] = useState('order');
+  const [selectedStatus, setSelectedStatus] = useState('');
   const user = useSelector((state) => state?.user);
-  const orderQuantityFormatter = (value) => (
-    <CountUp
-      end={value}
-      separator="."
-      style={{ color: "green", fontWeight: "bold" }}
-    />
-  );
-  const totalRevenueFormatter = (value) => (
-    <CountUp
-      end={value}
-      separator="."
-      style={{ color: "#CD3238", fontWeight: "bold" }}
-    />
-  );
-
-  const paidFormatter = (value) => (
-    <CountUp
-      end={value}
-      separator="."
-      style={{ color: "orange", fontWeight: "bold" }}
-    />
-  );
-
-  const deliveredFormatter = (value) => (
-    <CountUp
-      end={value}
-      separator="."
-      style={{ color: "blue", fontWeight: "bold" }}
-    />
-  );
-
-  const [searchText, setSearchText] = useState("");
-  const [searchedColumn, setSearchedColumn] = useState("");
-  const searchInput = useRef(null);
+  
+  // State cho phân trang và lọc
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: 10,
+    total: 0,
+  });
+  
+  // State lưu các bộ lọc
+  const [filters, setFilters] = useState({
+    orderId: '',
+    fullName: '',
+    phone: '',
+    status: [],
+    paymentMethod: [],
+    paymentStatus: [],
+  });
 
   const [stateOrderDetails, setStateOrderDetails] = useState({
     fullName: "",
@@ -77,39 +68,50 @@ const AdminOrder = () => {
     shippingPrice: "",
     totalPrice: "",
     paymentMethod: "",
-    isPaid: false,
-    isDelivery: false,
+    status: "",
+    payment: {
+      status: ""
+    },
     createdAt: "",
-    isCancelled: false,
   });
 
   const [formDetails] = Form.useForm();
+  const [searchForm] = Form.useForm();
 
-  const mutationUpdate = useMutationHooks(async (data) => {
-    const { id, token, isPaid, isDelivery } = data;
-    const res = await OrderService.updateOrder(id, token, {
-      isPaid,
-      isDelivery,
-    });
-    return res;
+  // Modal lọc đơn hàng
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+
+  // Xem chi tiết đơn hàng trong modal
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+
+  const mutationUpdateStatus = useMutation({
+    mutationFn: (data) => {
+      const { orderId, orderStatus, paymentStatus } = data;
+      return OrderService.updateOrderStatus(orderId, user?.access_token, {
+        orderStatus,
+        paymentStatus
+      });
+    },
+    onSuccess: () => {
+      queryOrder.refetch();
+      setIsModalUpdateStatus(false);
+      setSelectedStatus('');
+    }
   });
 
-  const mutationDeleted = useMutationHooks(async (data) => {
-    const { id, token } = data;
-    const res = await OrderService.deleteOrder(id, token);
-    return res;
+  const mutationDeleted = useMutation({
+    mutationFn: async (data) => {
+      const { id, token } = data;
+      const res = await OrderService.deleteOrder(id, token);
+      return res;
+    },
+    onSuccess: () => {
+      queryOrder.refetch();
+      setIsModalOpenDelete(false);
+    }
   });
-
-  const mutationDeletedMany = useMutationHooks(async (data) => {
-    const { token, ...ids } = data;
-    const res = await OrderService.deleteManyOrder(ids, token);
-    return res;
-  });
-
-  const getAllOrders = async () => {
-    const res = await OrderService.getAllOrder(user?.access_token);
-    return res;
-  };
 
   const fetchGetDetailsOrder = async (rowSelected) => {
     const res = await OrderService.getDetailsOrder(
@@ -119,29 +121,31 @@ const AdminOrder = () => {
 
     if (res?.data) {
       setStateOrderDetails({
-        fullName: res?.data?.shippingAddress?.fullName,
-        address: res?.data?.shippingAddress?.address,
-        phone: res?.data?.shippingAddress?.phone,
+        fullName: res?.data?.fullName,
+        address: res?.data?.address,
+        phone: res?.data?.phone,
         orderItems: res?.data?.orderItems,
         shippingPrice: convertPrice(res?.data?.shippingPrice),
         totalPrice: res?.data?.totalPrice,
-        paymentMethod: res?.data?.paymentMethod,
-        isPaid: res?.data?.isPaid,
-        isDelivery: res?.data?.isDelivery,
+        paymentMethod: res?.data?.payment?.paymentMethod || 'COD',
+        status: res?.data?.status || 'Pending',
+        payment: {
+          status: res?.data?.payment?.status || 'Pending'
+        },
         createdAt: timeTranform(res?.data?.createdAt),
-        isCancelled: res?.data?.isCancelled,
       });
     }
-    setIsLoadingUpdate(false);
   };
 
   useEffect(() => {
-    formDetails.setFieldsValue(stateOrderDetails);
+    formDetails.setFieldsValue({
+      ...stateOrderDetails,
+      paymentStatus: stateOrderDetails?.payment?.status
+    });
   }, [formDetails, stateOrderDetails]);
 
   useEffect(() => {
     if (rowSelected && isOpenDrawer) {
-      setIsLoadingUpdate(true);
       fetchGetDetailsOrder(rowSelected);
     }
   }, [isOpenDrawer]);
@@ -151,281 +155,88 @@ const AdminOrder = () => {
   };
 
   const queryOrder = useQuery({
-    queryKey: ["orders"],
-    queryFn: getAllOrders,
-  });
-  const { isPending: isLoadingOrders, data: orders } = queryOrder;
-
-  const renderAction = () => {
-    return (
-      <div style={{ display: "flex", gap: "20px" }}>
-        <EditOutlined
-          style={{ color: "orange", fontSize: "30px", cursor: "pointer" }}
-          onClick={handleDetailsOrder}
-        />
-        <DeleteOutlined
-          style={{ color: "red", fontSize: "30px", cursor: "pointer" }}
-          onClick={() => setIsModalOpenDelete(true)}
-        />
-      </div>
-    );
-  };
-
-  const handleSearch = (selectedKeys, confirm, dataIndex) => {
-    confirm();
-    setSearchText(selectedKeys[0]);
-    setSearchedColumn(dataIndex);
-  };
-  const handleReset = (clearFilters) => {
-    clearFilters();
-    setSearchText("");
-  };
-
-  const getColumnSearchProps = (dataIndex) => ({
-    filterDropdown: ({
-      setSelectedKeys,
-      selectedKeys,
-      confirm,
-      clearFilters,
-      close,
-    }) => (
-      <div
-        style={{
-          padding: 8,
-        }}
-        onKeyDown={(e) => e.stopPropagation()}
-      >
-        <Input
-          ref={searchInput}
-          placeholder={`Search ${dataIndex}`}
-          value={selectedKeys[0]}
-          onChange={(e) =>
-            setSelectedKeys(e.target.value ? [e.target.value] : [])
-          }
-          onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
-          style={{
-            marginBottom: 8,
-            display: "block",
-            fontSize: "16px",
-          }}
-        />
-        <Space>
-          <Button
-            type="primary"
-            onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
-            icon={<SearchOutlined />}
-            size="small"
-            style={{
-              width: 90,
-              height: "30px",
-              fontSize: "16px",
-            }}
-          >
-            Tìm
-          </Button>
-          <Button
-            onClick={() => clearFilters && handleReset(clearFilters)}
-            size="small"
-            style={{
-              width: 90,
-              height: "30px",
-              fontSize: "16px",
-            }}
-          >
-            Đặt lại
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              close();
-            }}
-            style={{
-              height: "30px",
-              fontSize: "16px",
-            }}
-          >
-            Đóng
-          </Button>
-        </Space>
-      </div>
-    ),
-    filterIcon: (filtered) => (
-      <SearchOutlined
-        style={{
-          color: filtered ? "#1677ff" : undefined,
-        }}
-      />
-    ),
-    onFilter: (value, record) =>
-      record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()),
-    onFilterDropdownOpenChange: (visible) => {
-      if (visible) {
-        setTimeout(() => searchInput.current?.select(), 100);
-      }
-    },
-  });
-
-  const columns = [
-    {
-      title: "Tên khách hàng",
-      dataIndex: "userName",
-      sorter: (a, b) => a.userName.length - b.userName.length,
-      ...getColumnSearchProps("userName"),
-    },
-    {
-      title: "Số điện thoại",
-      dataIndex: "phone",
-      sorter: (a, b) => a.phone.length - b.phone.length,
-      ...getColumnSearchProps("phone"),
-    },
-    {
-      title: "Địa chỉ",
-      dataIndex: "address",
-      sorter: (a, b) => a.address.length - b.address.length,
-      ...getColumnSearchProps("address"),
-    },
-    {
-      title: "Thanh toán",
-      dataIndex: "isPaid",
-      filters: [
-        {
-          text: "Đã thanh toán",
-          value: "Đã thanh toán",
-        },
-        {
-          text: "Chưa thanh toán",
-          value: "Chưa thanh toán",
-        },
-      ],
-      onFilter: (value, record) => {
-        return record.isPaid === value;
-      },
-    },
-    {
-      title: "Giao hàng",
-      dataIndex: "isDelivery",
-      filters: [
-        {
-          text: "Đã giao hàng",
-          value: "Đã giao hàng",
-        },
-        {
-          text: "Chưa giao hàng",
-          value: "Chưa giao hàng",
-        },
-      ],
-      onFilter: (value, record) => {
-        return record.isDelivery === value;
-      },
-    },
-    {
-      title: "Tổng tiền(VND)",
-      dataIndex: "totalPrice",
-      render: (text) => (
-        <span style={{ color: "#CD3238", fontWeight: "bold" }}>{text}</span>
-      ),
-      sorter: (a, b) => a.totalPrice.length - b.totalPrice.length,
-      width: 200,
-      align: "center",
-    },
-    {
-      title: "Thời gian đặt hàng",
-      dataIndex: "createdAt",
-      render: (text) => <span style={{ color: "blue" }}>{text}</span>,
-      ...getColumnSearchProps("createdAt"),
-    },
-    {
-      title: "Thao tác",
-      dataIndex: "action",
-      render: renderAction,
-    },
-  ];
-
-  const dataTable =
-    orders?.data?.length &&
-    orders?.data?.map((order) => {
-      return {
-        ...order,
-        key: order._id,
-        userName: order?.shippingAddress?.fullName,
-        phone: order?.shippingAddress?.phone,
-        address: order?.shippingAddress?.address,
-        paymentMethod: orderConstant.payment[order?.paymentMethod],
-        isPaid: order?.isPaid ? "Đã thanh toán" : "Chưa thanh toán",
-        isDelivery: order?.isDelivery ? "Đã giao hàng" : "Chưa giao hàng",
-        totalPrice: convertPrice(order?.totalPrice),
-        createdAt: timeTranform(order?.createdAt),
-        isCancelled: order?.isCancelled,
+    queryKey: ["orders", pagination.page, pagination.pageSize, filters],    //Khi có sự thay đổi của pagination.page, pagination.pageSize, filters thì sẽ gọi lại queryFn
+    queryFn: () => {
+      const options = {
+        page: pagination.page,
+        limit: pagination.pageSize,
+        ...filters,
       };
+      
+      return OrderService.getPaginatedOrders(user?.access_token, options);
+    },
+    keepPreviousData: true
+  });
+  
+  const { isLoading: isLoadingOrders, data: orders } = queryOrder;
+
+  // Handler cho thay đổi trang
+  const handlePageChange = (page, pageSize) => {
+    setPagination({
+      ...pagination,
+      page,
+      pageSize,
     });
-
-  const {
-    data: dataUpdated,
-    isPending: isLoadingUpdated,
-    isSuccess: isSuccessUpdated,
-    isError: isErrorUpdated,
-  } = mutationUpdate;
-
-  const {
-    data: dataDeleted,
-    isPending: isLoadingDeleted,
-    isSuccess: isSuccessDeleted,
-    isError: isErrorDeleted,
-  } = mutationDeleted;
-
-  const {
-    data: dataDeletedMany,
-    isPending: isLoadingDeletedMany,
-    isSuccess: isSuccessDeletedMany,
-    isError: isErrorDeletedMany,
-  } = mutationDeletedMany;
-
-  useEffect(() => {
-    if (isSuccessDeleted && dataDeleted?.status === "OK") {
-      message.success("Xóa đơn hàng thành công");
-      handleCancelDelete();
-    } else if (isErrorDeleted || dataDeleted?.status === "ERR") {
-      message.error("Xóa đơn hàng thất bại. ");
-    }
-  }, [isSuccessDeleted, isErrorDeleted]);
-
-  useEffect(() => {
-    if (isSuccessDeletedMany && dataDeletedMany?.status === "OK") {
-      message.success("Xóa các đơn hàng thành công");
-    } else if (isErrorDeletedMany || dataDeletedMany?.status === "ERR") {
-      message.error("Xóa các đơn hàng thất bại. ");
-    }
-  }, [isSuccessDeletedMany, isErrorDeletedMany]);
-
-  useEffect(() => {
-    if (isSuccessUpdated && dataUpdated?.status === "OK") {
-      message.success("Cập nhật đơn hàng thành công");
-      handleCloseDrawer();
-    } else if (isErrorUpdated || dataUpdated?.status === "ERR") {
-      message.error("Cập nhật đơn hàng thất bại. ");
-    }
-  }, [isSuccessUpdated, isErrorUpdated]);
-
-  const handleCloseDrawer = () => {
-    setIsOpenDrawer(false);
-    setStateOrderDetails({
-      fullName: "",
-      address: "",
-      phone: "",
-      shippingPrice: "",
-      totalPrice: "",
-      paymentMethod: "",
-      isPaid: false,
-      isDelivery: false,
-      createdAt: "",
-      isCancelled: false,
-    });
-    formDetails.resetFields();
   };
 
-  const handleCancelDelete = () => {
-    setIsModalOpenDelete(false);
+  // Handler cho việc áp dụng bộ lọc
+  const handleApplyFilters = (values) => {
+    setFilters(values);
+    setPagination({
+      ...pagination,
+      page: 1,
+    });
+    setIsFilterModalVisible(false);
+  };
+
+  // Handler reset bộ lọc
+  const handleResetFilters = () => {
+    searchForm.setFieldsValue({
+      orderId: '',
+      fullName: '',
+      phone: '',
+      status: [],
+      paymentMethod: [],
+      paymentStatus: [],
+    });
+  };
+
+  // Khi mở modal, set giá trị form từ filters hiện tại
+  useEffect(() => {
+    if (isFilterModalVisible) {
+      searchForm.setFieldsValue(filters);
+    }
+  }, [isFilterModalVisible]);
+
+  const handleViewDetails = async (orderId) => {
+    if (!orderId) return;
+    
+    setSelectedOrder(null);
+    setIsModalVisible(true);
+    setIsLoadingDetails(true);
+    try {
+      const response = await OrderService.getDetailsOrder(orderId, user?.access_token);
+      setSelectedOrder(response.data);
+    } catch (error) {
+      message.error("Có lỗi xảy ra: " + error.message);
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  };
+
+  const handleUpdateStatus = () => {
+    if (!selectedStatus) {
+      message.error('Vui lòng chọn trạng thái');
+      return;
+    }
+
+    const updateData = {
+      orderId: rowSelected,
+      orderStatus: selectedStatusType === 'order' ? selectedStatus : undefined,
+      paymentStatus: selectedStatusType === 'payment' ? selectedStatus : undefined
+    };
+
+    mutationUpdateStatus.mutate(updateData);
   };
 
   const handleDeleteOrder = () => {
@@ -439,119 +250,184 @@ const AdminOrder = () => {
     );
   };
 
-  const handleDeleteManyOrders = (ids) => {
-    mutationDeletedMany.mutate(
-      { ids: ids, token: user?.access_token },
-      {
-        onSettled: () => {
-          queryOrder.refetch();
-        },
-      }
+  const renderAction = () => {
+    return (
+      <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+        <Tooltip title="Xem chi tiết">
+          <EyeOutlined
+            style={{ color: "#1890ff", fontSize: "20px", cursor: "pointer" }}
+            onClick={() => handleViewDetails(rowSelected)}
+          />
+        </Tooltip>
+        <Tooltip title="Cập nhật trạng thái">
+          <EditOutlined
+            style={{ color: "orange", fontSize: "20px", cursor: "pointer" }}
+            onClick={() => setIsModalUpdateStatus(true)}
+          />
+        </Tooltip>
+        <Tooltip title="Xóa">
+          <DeleteOutlined
+            style={{ color: "red", fontSize: "20px", cursor: "pointer" }}
+            onClick={() => setIsModalOpenDelete(true)}
+          />
+        </Tooltip>
+      </div>
     );
   };
 
-  const handleOnChangeIsPaid = (value) => {
-    setStateOrderDetails({
-      ...stateOrderDetails,
-      isPaid: value,
+  // Chuyển đổi trạng thái đơn hàng thành Tag có màu sắc
+  const renderOrderStatus = (status) => {
+    let color = 'blue';
+    
+    switch(status) {
+      case 'Delivered':
+        color = 'green';
+        break;
+      case 'Shipping':
+        color = 'blue';
+        break;
+      case 'Cancelled':
+        color = 'red';
+        break;
+      case 'Pending':
+        color = 'orange';
+        break;
+      default:
+        color = 'default';
+    }
+    
+    return <Tag color={color}>{orderConstant.orderStatus[status] || status}</Tag>;
+  };
+
+  // Chuyển đổi trạng thái thanh toán thành Tag có màu sắc
+  const renderPaymentStatus = (status) => {
+    let color = 'default';
+    
+    switch(status) {
+      case 'Completed':
+        color = 'green';
+        break;
+      case 'Pending':
+        color = 'orange';
+        break;
+      case 'Failed':
+        color = 'red';
+        break;
+      default:
+        color = 'default';
+    }
+    
+    return <Tag color={color}>{orderConstant.paymentStatus[status] || status}</Tag>;
+  };
+
+  const columns = [
+    {
+      title: "Mã đơn hàng",
+      dataIndex: "orderCode",
+      align: "center",
+      width: 100,
+    },
+    {
+      title: "Tên khách hàng",
+      dataIndex: "fullName",
+      align: "center",
+      width: 180,
+    },
+    {
+      title: "Số điện thoại",
+      dataIndex: "phone",
+      align: "center",
+      width: 120,
+    },
+    {
+      title: "Trạng thái đơn hàng",
+      dataIndex: "status",
+      render: (status) => renderOrderStatus(status),
+      align: "center",
+      width: 120,
+    },
+    {
+      title: "Trạng thái thanh toán",
+      dataIndex: "paymentStatus",
+      render: (status) => renderPaymentStatus(status),
+      align: "center",
+      width: 120,
+    },
+    {
+      title: "Phương thức thanh toán",
+      dataIndex: "paymentMethod",
+      render: (method) => orderConstant.payment[method] || method,
+      align: "center",
+      width: 150,
+    },
+    {
+      title: "Tổng tiền (VNĐ)",
+      dataIndex: "totalPrice",
+      render: (text) => (
+        <span style={{ color: "#CD3238", fontWeight: "bold" }}>{convertPrice(text)}</span>
+      ),
+      align: "center",
+      width: 150,
+    },
+    {
+      title: "Thời gian đặt hàng",
+      dataIndex: "createdAt",
+      align: "center",
+      width: 120,
+    },
+    {
+      title: "Thao tác",
+      dataIndex: "action",
+      render: renderAction,
+      align: "center",
+      width: 120,
+    },
+  ];
+
+  const dataTable =
+    orders?.data?.length &&
+    orders?.data?.map((order) => {
+      return {
+        ...order,
+        key: order._id,
+        orderCode: order?._id,
+        paymentStatus: order?.payment?.status || 'Pending',
+        paymentMethod: order?.payment?.paymentMethod || 'COD',
+        totalPrice: order?.totalPrice,
+        createdAt: timeTranform(order?.createdAt),
+      };
     });
-  };
 
-  const handleOnChangeIsDelivery = (value) => {
-    setStateOrderDetails({
-      ...stateOrderDetails,
-      isDelivery: value,
-    });
-  };
-
-  const onUpdateOrder = () => {
-    mutationUpdate.mutate(
-      {
-        id: rowSelected,
-        token: user?.access_token,
-        ...stateOrderDetails,
-      },
-      {
-        onSettled: () => {
-          queryOrder.refetch();
-        },
-      }
-    );
-  };
-
-
-  //Memo cho thống kê
-  const totalRevenue = useMemo(() => {
-    return orders?.data?.reduce((total, order) => {
-      return total + (order?.isPaid ? order?.totalPrice : 0);
-    }, 0);
+  // Cập nhật tổng số bản ghi từ response
+  useEffect(() => {
+    if (orders?.pagination) {
+      setPagination({
+        ...pagination,
+        total: orders.pagination.total || 0,
+      });
+    }
   }, [orders]);
-
-  const paidOrderQuantity = useMemo(() => {
-    return orders?.data?.reduce((total, order) => {
-      return total + (order?.isPaid ? 1 : 0);
-    }, 0);
-  }, [orders])
-
-  const deliveredOrderQuantity = useMemo(() => {
-    return orders?.data?.reduce((total, order) => {
-      return total + (order?.isDelivery ? 1 : 0);
-    }, 0);
-  },[orders])
 
   return (
     <div>
       <WrapperHeader>Quản lý đơn hàng</WrapperHeader>
-      <Row gutter={40} style={{ marginTop: "20px", marginBottom: "20px" }}>
-        <Col span={4}>
-          <Card style={{border: '1px solid #00B55F'}}>
-            <Statistic
-              title="Số đơn hàng"
-              value={orders?.data?.length}
-              formatter={orderQuantityFormatter}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card style={{border: '1px solid red'}}>
-            <Statistic
-              title="Tổng doanh thu"
-              value={totalRevenue}
-              precision={2}
-              formatter={totalRevenueFormatter}
-              suffix={
-                <span style={{ color: "#CD3238", fontWeight: "bold" }}>
-                  VNĐ
-                </span>
-              }
-            />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card style={{border: '1px solid #ffbe0c'}}>
-            <Statistic
-              title="Số đơn đã thanh toán"
-              value={paidOrderQuantity}
-              formatter={paidFormatter}
-            />
-          </Card>
-        </Col>
-        <Col span={4}>
-          <Card style={{border: '1px solid #1677FF'}}>
-            <Statistic
-              title="Số đơn đã giao hàng"
-              value={deliveredOrderQuantity}
-              formatter={deliveredFormatter}
-            />
-          </Card>
-        </Col>
-      </Row>
-      <div style={{ marginTop: "20px" }}>
+
+      {/* Nút lọc và bảng dữ liệu */}
+      <div style={{ marginTop: 20, marginBottom: 20 }}>
+        <Button 
+          type="primary" 
+          icon={<SearchOutlined />}
+          onClick={() => setIsFilterModalVisible(true)}
+          style={{ marginBottom: 20 }}
+        >
+          Lọc đơn hàng
+        </Button>
+
         <TableComponent
-          handleDeleteMany={handleDeleteManyOrders}
           columns={columns}
           data={dataTable}
           isLoading={isLoadingOrders}
+          pagination={false}
           onRow={(record, rowIndex) => {
             return {
               onClick: (event) => {
@@ -560,167 +436,195 @@ const AdminOrder = () => {
             };
           }}
         />
+
+        {/* Phân trang */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
+          <Pagination
+            current={pagination.page}
+            pageSize={pagination.pageSize}
+            total={pagination.total}
+            onChange={handlePageChange}
+            showSizeChanger
+            pageSizeOptions={['10', '20', '50', '100']}
+            showTotal={(total) => `Tổng ${total} bản ghi`}
+          />
+        </div>
       </div>
-      <DrawerComponent
-        title="Chi tiết đơn hàng"
-        isOpen={isOpenDrawer}
-        onClose={() => {
-          setIsOpenDrawer(false);
-        }}
-        width="65%"
-        forceRender
+
+      {/* Modal lọc đơn hàng */}
+      <Modal
+        title="Lọc đơn hàng"
+        open={isFilterModalVisible}
+        onCancel={() => setIsFilterModalVisible(false)}
+        footer={null}
+        width={800}
       >
-        <Loading isLoading={isLoadingUpdate || isLoadingUpdated}>
-          <Form
-            name="Edit order form"
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            style={{
-              maxWidth: 600,
-            }}
-            initialValues={{
-              remember: true,
-            }}
-            onFinish={onUpdateOrder}
-            autoComplete="off"
-            form={formDetails}
-          >
-            <Form.Item label="Tên khách hàng" name="fullName">
-              <div style={{ fontSize: "16px", fontWeight: "bold" }}>
-                {stateOrderDetails?.fullName}
-              </div>
-            </Form.Item>
-
-            <Form.Item label="Địa chỉ" name="address">
-              <div style={{ fontSize: "16px", fontWeight: "bold" }}>
-                {stateOrderDetails?.address}
-              </div>
-            </Form.Item>
-
-            <Form.Item label="Số điện thoại" name="phone">
-              <div style={{ fontSize: "16px", fontWeight: "bold" }}>
-                {stateOrderDetails?.phone}
-              </div>
-            </Form.Item>
-
-            <Form.Item label="Phương thức giao hàng" name="paymentMethod">
-              <div style={{ fontSize: "16px", color: "" }}>
-                {orderConstant.payment[stateOrderDetails?.paymentMethod]}
-              </div>
-            </Form.Item>
-
-            <Form.Item label="Thời gian đặt hàng" name="createdAt">
-              <div style={{ fontSize: "16px", color: "blue" }}>
-                {stateOrderDetails.createdAt}
-              </div>
-            </Form.Item>
-
-            <Form.Item label="Tổng tiền" name="totalPrice">
-              <div
-                style={{
-                  fontSize: "16px",
-                  color: "#CD3238",
-                  fontWeight: "bold",
-                }}
-              >
-                {convertPrice(stateOrderDetails.totalPrice)}
-              </div>
-            </Form.Item>
-
-            {stateOrderDetails.isCancelled ? (
-              <Form.Item label="Trạng thái" name="status">
-                <div style={{ fontSize: "18px", fontWeight: "bold" }}>
-                  Đã hủy
-                </div>
+        <Form
+          form={searchForm}
+          layout="vertical"
+          onFinish={handleApplyFilters}
+          initialValues={filters}
+        >
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="orderId" label="Mã đơn hàng">
+                <Input placeholder="Nhập mã đơn hàng" />
               </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="fullName" label="Tên khách hàng">
+                <Input placeholder="Nhập tên khách hàng" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="phone" label="Số điện thoại">
+                <Input placeholder="Nhập số điện thoại" />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="status" label="Trạng thái đơn hàng">
+                <Select
+                  mode="multiple"
+                  allowClear
+                  placeholder="Chọn trạng thái"
+                  options={[
+                    { value: 'Pending', label: 'Chờ xác nhận' },
+                    { value: 'Shipping', label: 'Đang giao hàng' },
+                    { value: 'Delivered', label: 'Đã giao hàng' },
+                    { value: 'Cancelled', label: 'Đã hủy' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="paymentMethod" label="Phương thức thanh toán">
+                <Select
+                  mode="multiple"
+                  allowClear
+                  placeholder="Chọn phương thức thanh toán"
+                  options={[
+                    { value: 'COD', label: 'Thanh toán khi nhận hàng' },
+                    { value: 'PAYPAL', label: 'PayPal' },
+                    { value: 'VNPAY', label: 'VNPay' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="paymentStatus" label="Trạng thái thanh toán">
+                <Select
+                  mode="multiple"
+                  allowClear
+                  placeholder="Chọn trạng thái thanh toán"
+                  options={[
+                    { value: 'Pending', label: 'Chờ thanh toán' },
+                    { value: 'Completed', label: 'Đã thanh toán' },
+                    { value: 'Failed', label: 'Thanh toán thất bại' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row>
+            <Col span={24} style={{ textAlign: 'right' }}>
+              <Button 
+                onClick={handleResetFilters}
+                style={{ marginRight: 8 }}
+              >
+                Đặt lại
+              </Button>
+              <Button type="primary" htmlType="submit">
+                Áp dụng
+              </Button>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
+
+      {/* Modal cập nhật trạng thái */}
+      <Modal
+        title="Cập nhật trạng thái"
+        open={isModalUpdateStatus}
+        onCancel={() => {
+          setIsModalUpdateStatus(false);
+          setSelectedStatus('');
+        }}
+        onOk={handleUpdateStatus}
+        confirmLoading={mutationUpdateStatus.isPending}
+      >
+        <Form layout="vertical">
+          <Form.Item label="Loại trạng thái">
+            <Radio.Group 
+              value={selectedStatusType} 
+              onChange={(e) => {
+                setSelectedStatusType(e.target.value);
+                setSelectedStatus('');
+              }}
+            >
+              <Radio value="order">Trạng thái đơn hàng</Radio>
+              <Radio value="payment">Trạng thái thanh toán</Radio>
+            </Radio.Group>
+          </Form.Item>
+
+          <Form.Item label="Trạng thái">
+            {selectedStatusType === 'order' ? (
+              <Select
+                value={selectedStatus}
+                onChange={(value) => {
+                  setSelectedStatus(value);
+                }}
+                placeholder="Chọn trạng thái đơn hàng"
+                options={[
+                  { value: 'Pending', label: 'Chờ xác nhận' },
+                  { value: 'Shipping', label: 'Đang giao hàng' },
+                  { value: 'Delivered', label: 'Đã giao hàng' },
+                  { value: 'Cancelled', label: 'Đã hủy' },
+                ]}
+              />
             ) : (
-              <div>
-                <Form.Item
-                  label="Thanh toán"
-                  name="isPaid"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Hãy chọn trạng thái thanh toán của đơn hàng!",
-                    },
-                  ]}
-                >
-                  <Select
-                    defaultValue={stateOrderDetails?.isPaid}
-                    style={{
-                      width: 150,
-                    }}
-                    onChange={handleOnChangeIsPaid}
-                    options={[
-                      {
-                        value: true,
-                        label: "Đã thanh toán",
-                      },
-                      {
-                        value: false,
-                        label: "Chưa thanh toán",
-                      },
-                    ]}
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  label="Giao hàng"
-                  name="isDelivery"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Hãy chọn trạng thái giao hàng!",
-                    },
-                  ]}
-                >
-                  <Select
-                    defaultValue={stateOrderDetails?.isDelivery}
-                    style={{
-                      width: 150,
-                    }}
-                    onChange={handleOnChangeIsDelivery}
-                    options={[
-                      {
-                        value: true,
-                        label: "Đã giao hàng",
-                      },
-                      {
-                        value: false,
-                        label: "Chưa giao hàng",
-                      },
-                    ]}
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  wrapperCol={{
-                    offset: 19,
-                    span: 16,
-                  }}
-                >
-                  <Button type="primary" htmlType="submit">
-                    Cập nhật
-                  </Button>
-                </Form.Item>
-              </div>
+              <Select
+                value={selectedStatus}
+                onChange={(value) => {
+                  setSelectedStatus(value);
+                }}
+                placeholder="Chọn trạng thái thanh toán"
+                options={[
+                  { value: 'Pending', label: 'Chờ thanh toán' },
+                  { value: 'Completed', label: 'Đã thanh toán' },
+                  { value: 'Failed', label: 'Thanh toán thất bại' },
+                ]}
+              />
             )}
-          </Form>
-        </Loading>
-      </DrawerComponent>
+          </Form.Item>
+        </Form>
+      </Modal>
 
+      {/* Modal xem chi tiết đơn hàng */}
+      <Modal
+        title="Chi tiết đơn hàng"
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        width={1000}
+        footer={null}
+      >
+        <Loading isLoading={isLoadingDetails}>
+          {selectedOrder && <OrderDetailsComponent order={selectedOrder} />}
+        </Loading>
+      </Modal>
+
+      {/* Modal xóa đơn hàng */}
       <ModalComponent
         title="Xóa đơn hàng"
         open={isModalOpenDelete}
         onOk={handleDeleteOrder}
-        onCancel={handleCancelDelete}
+        onCancel={() => setIsModalOpenDelete(false)}
         cancelText="Hủy bỏ"
       >
-        <Loading isLoading={isLoadingDeleted}>
+        <Loading isLoading={mutationDeleted.isPending}>
           <p>Bạn có chắc muốn xóa đơn hàng này?</p>
         </Loading>
       </ModalComponent>

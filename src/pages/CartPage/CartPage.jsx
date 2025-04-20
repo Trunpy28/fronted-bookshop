@@ -280,7 +280,8 @@ const CartPage = () => {
     navigate("/payment", { 
       state: { 
         shippingAddress,
-        voucherCode: appliedVoucherCode || ""
+        voucherCode: appliedVoucherCode || "",
+        totalPrice: finalPriceMemo
       } 
     });
   };
@@ -522,11 +523,11 @@ const CartPage = () => {
                     }}>
                       <Input
                         value={voucherCode}
-                        onChange={(e) => setVoucherCode(e.target.value)}
+                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
                         placeholder="Nhập mã giảm giá"
                         style={{ 
                           flex: 1,
-                          borderColor: "#e0e0e0"
+                          borderColor: "#e0e0e0",
                         }}
                         disabled={!!appliedVoucherCode}
                       />
