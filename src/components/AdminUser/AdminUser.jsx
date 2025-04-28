@@ -443,9 +443,7 @@ const AdminUser = () => {
       },
     });
   };
-  const onFinishFailed = (errorInfo) => {
-    console.log("Failed:", errorInfo);
-  };
+
 
   const handleOnChange = (e) => {
     setStateUser({
@@ -603,7 +601,6 @@ const AdminUser = () => {
               remember: true,
             }}
             onFinish={onFinish}
-            onFinishFailed={onFinishFailed}
             autoComplete="off"
             form={form}
           >

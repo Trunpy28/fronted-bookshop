@@ -56,9 +56,7 @@ export const deleteVoucher = async (id, token) => {
   return response.data;
 };
 
-export const applyVoucher = async (data, token) => {
-  console.log(data);
-  
+export const applyVoucher = async (data, token) => {  
   const response = await axiosJWT.post(`${API_URL}/apply`, data, {
     headers: {
       Authorization: `Bearer ${token}`,

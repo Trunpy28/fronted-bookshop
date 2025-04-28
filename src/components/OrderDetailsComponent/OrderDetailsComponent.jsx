@@ -46,6 +46,18 @@ const OrderDetailsComponent = ({ order }) => {
           <div style={{ fontSize: '16px', lineHeight: '1.8' }}>
             <p><strong>Mã đơn hàng:</strong> #{order?._id}</p>
             <p><strong>Thời gian đặt hàng:</strong> {timeTranform(order?.createdAt)}</p>
+            {order?.deliveryAt && (
+              <p><strong>Thời gian bắt đầu giao hàng:</strong> {timeTranform(order?.deliveryAt)}</p>
+            )}
+            {order?.deliveredAt && (
+              <p><strong>Thời gian giao hàng thành công:</strong> {timeTranform(order?.deliveredAt)}</p>
+            )}
+            {order?.cancelledAt && (
+              <p><strong>Thời gian hủy đơn hàng:</strong> {timeTranform(order?.cancelledAt)}</p>
+            )}
+            {order?.cancelReason && (
+              <p style={{ wordWrap: 'break-word', maxWidth: '500px' }}><strong>Lý do hủy đơn hàng:</strong> {order?.cancelReason}</p>
+            )}
           </div>
         </WrapperInfo>
 

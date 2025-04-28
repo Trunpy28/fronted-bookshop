@@ -33,8 +33,6 @@ const AdminBatch = () => {
 
   const mutationCreate = useMutation({
     mutationFn: (data) => {
-      console.log(data.dateReceived);
-      
       const formattedData = {
         ...data,
         dateReceived: data.dateReceived ? data.dateReceived.format('YYYY-MM-DD HH:mm:ss') : undefined

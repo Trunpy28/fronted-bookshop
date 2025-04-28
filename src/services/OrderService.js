@@ -34,26 +34,20 @@ export const getDetailsOrder = async (orderId, accessToken) => {
   return response.data;
 };
 
-export const cancelOrder = async (orderId, accessToken) => {
-  const response = await axiosJWT.delete(`${API_URL}/cancel-order/${orderId}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`
+export const cancelOrder = async (orderId, accessToken, cancelReason) => {
+  const response = await axiosJWT.patch(`${API_URL}/cancel-order/${orderId}`, 
+    { cancelReason },
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
     }
-  });
+  );
   return response.data;
 };
 
-export const updateOrder = async (id, accessToken, data) => {
-  const res = await axiosJWT.put(`${API_URL}/update-order/${id}`, data, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-  return res.data;
-};
-
-export const deleteOrder = async (id, accessToken) => {
-  const res = await axiosJWT.delete(`${API_URL}/delete-order/${id}`, {
+export const deleteOrder = async (orderId, accessToken) => {
+  const res = await axiosJWT.delete(`${API_URL}/delete-order/${orderId}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -62,7 +56,7 @@ export const deleteOrder = async (id, accessToken) => {
 };
 
 export const updateOrderStatus = async (orderId, accessToken, status) => {
-  const response = await axiosJWT.put(`${API_URL}/update-status/${orderId}`, 
+  const response = await axiosJWT.patch(`${API_URL}/update-status/${orderId}`, 
     { ...status },
     {
       headers: {

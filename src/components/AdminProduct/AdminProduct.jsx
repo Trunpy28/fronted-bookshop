@@ -208,10 +208,6 @@ const AdminProduct = () => {
     });
   };
 
-  const onFinishFailed = (errorInfo) => {
-    console.log("Không thành công:", errorInfo);
-  };
-
   const { data: genres } = queryGenres;
 
   const handleViewDetails = (product) => {
@@ -368,7 +364,6 @@ const AdminProduct = () => {
             labelCol={{ span: 8 }}
             wrapperCol={{ span: 16 }}
             onFinish={onFinishCreate}
-            onFinishFailed={onFinishFailed}
             autoComplete="on"
           >
             <Form.Item

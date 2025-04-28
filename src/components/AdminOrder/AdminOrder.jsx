@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { WrapperHeader } from "./style";
 import {
   Button,
@@ -25,11 +25,9 @@ import {
 import TableComponent from "../TableComponent/TableComponent";
 import { convertPrice, timeTranform } from "../../utils";
 import * as OrderService from "../../services/OrderService";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Loading from "../LoadingComponent/Loading";
 import * as message from "../Message/Message";
-import { useQuery } from "@tanstack/react-query";
-import DrawerComponent from "../DrawerComponent/DrawerComponent";
 import { useSelector } from "react-redux";
 import ModalComponent from "../ModalComponent/ModalComponent";
 import { orderConstant } from "../../constant";
@@ -37,7 +35,6 @@ import OrderDetailsComponent from "../OrderDetailsComponent/OrderDetailsComponen
 
 const AdminOrder = () => {
   const [rowSelected, setRowSelected] = useState("");
-  const [isOpenDrawer, setIsOpenDrawer] = useState(false);
   const [isModalOpenDelete, setIsModalOpenDelete] = useState(false);
   const [isModalUpdateStatus, setIsModalUpdateStatus] = useState(false);
   const [selectedStatusType, setSelectedStatusType] = useState('order');
@@ -61,21 +58,6 @@ const AdminOrder = () => {
     paymentStatus: [],
   });
 
-  const [stateOrderDetails, setStateOrderDetails] = useState({
-    fullName: "",
-    address: "",
-    phone: "",
-    shippingPrice: "",
-    totalPrice: "",
-    paymentMethod: "",
-    status: "",
-    payment: {
-      status: ""
-    },
-    createdAt: "",
-  });
-
-  const [formDetails] = Form.useForm();
   const [searchForm] = Form.useForm();
 
   // Modal lọc đơn hàng
@@ -86,76 +68,9 @@ const AdminOrder = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
-  const mutationUpdateStatus = useMutation({
-    mutationFn: (data) => {
-      const { orderId, orderStatus, paymentStatus } = data;
-      return OrderService.updateOrderStatus(orderId, user?.access_token, {
-        orderStatus,
-        paymentStatus
-      });
-    },
-    onSuccess: () => {
-      queryOrder.refetch();
-      setIsModalUpdateStatus(false);
-      setSelectedStatus('');
-    }
-  });
-
-  const mutationDeleted = useMutation({
-    mutationFn: async (data) => {
-      const { id, token } = data;
-      const res = await OrderService.deleteOrder(id, token);
-      return res;
-    },
-    onSuccess: () => {
-      queryOrder.refetch();
-      setIsModalOpenDelete(false);
-    }
-  });
-
-  const fetchGetDetailsOrder = async (rowSelected) => {
-    const res = await OrderService.getDetailsOrder(
-      rowSelected,
-      user?.access_token
-    );
-
-    if (res?.data) {
-      setStateOrderDetails({
-        fullName: res?.data?.fullName,
-        address: res?.data?.address,
-        phone: res?.data?.phone,
-        orderItems: res?.data?.orderItems,
-        shippingPrice: convertPrice(res?.data?.shippingPrice),
-        totalPrice: res?.data?.totalPrice,
-        paymentMethod: res?.data?.payment?.paymentMethod || 'COD',
-        status: res?.data?.status || 'Pending',
-        payment: {
-          status: res?.data?.payment?.status || 'Pending'
-        },
-        createdAt: timeTranform(res?.data?.createdAt),
-      });
-    }
-  };
-
-  useEffect(() => {
-    formDetails.setFieldsValue({
-      ...stateOrderDetails,
-      paymentStatus: stateOrderDetails?.payment?.status
-    });
-  }, [formDetails, stateOrderDetails]);
-
-  useEffect(() => {
-    if (rowSelected && isOpenDrawer) {
-      fetchGetDetailsOrder(rowSelected);
-    }
-  }, [isOpenDrawer]);
-
-  const handleDetailsOrder = () => {
-    setIsOpenDrawer(true);
-  };
-
+  // useQuery cho danh sách đơn hàng
   const queryOrder = useQuery({
-    queryKey: ["orders", pagination.page, pagination.pageSize, filters],    //Khi có sự thay đổi của pagination.page, pagination.pageSize, filters thì sẽ gọi lại queryFn
+    queryKey: ["orders", pagination.page, pagination.pageSize, filters],
     queryFn: () => {
       const options = {
         page: pagination.page,
@@ -169,6 +84,42 @@ const AdminOrder = () => {
   });
   
   const { isLoading: isLoadingOrders, data: orders } = queryOrder;
+
+  // Mutation cập nhật trạng thái
+  const mutationUpdateStatus = useMutation({
+    mutationFn: (data) => {
+      const { orderId, orderStatus, paymentStatus } = data;
+      return OrderService.updateOrderStatus(orderId, user?.access_token, {
+        orderStatus,
+        paymentStatus
+      });
+    },
+    onSuccess: (data) => {
+      message.success("Cập nhật trạng thái đơn hàng thành công");
+      queryOrder.refetch();
+      setIsModalUpdateStatus(false);
+      setSelectedStatus('');
+    },
+    onError: (error) => {
+      message.error(error.response.data.message);
+    }
+  });
+
+  // Mutation xóa đơn hàng
+  const mutationDeleted = useMutation({
+    mutationFn: async (data) => {
+      const { orderId } = data;
+      const res = await OrderService.deleteOrder(orderId, user?.access_token);
+      return res;
+    },
+    onSuccess: () => {
+      queryOrder.refetch();
+      setIsModalOpenDelete(false);
+    },
+    onError: (error) => {
+      message.error(error.response.data.message);
+    }
+  });
 
   // Handler cho thay đổi trang
   const handlePageChange = (page, pageSize) => {
@@ -241,37 +192,7 @@ const AdminOrder = () => {
 
   const handleDeleteOrder = () => {
     mutationDeleted.mutate(
-      { id: rowSelected, token: user?.access_token },
-      {
-        onSettled: () => {
-          queryOrder.refetch();
-        },
-      }
-    );
-  };
-
-  const renderAction = () => {
-    return (
-      <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-        <Tooltip title="Xem chi tiết">
-          <EyeOutlined
-            style={{ color: "#1890ff", fontSize: "20px", cursor: "pointer" }}
-            onClick={() => handleViewDetails(rowSelected)}
-          />
-        </Tooltip>
-        <Tooltip title="Cập nhật trạng thái">
-          <EditOutlined
-            style={{ color: "orange", fontSize: "20px", cursor: "pointer" }}
-            onClick={() => setIsModalUpdateStatus(true)}
-          />
-        </Tooltip>
-        <Tooltip title="Xóa">
-          <DeleteOutlined
-            style={{ color: "red", fontSize: "20px", cursor: "pointer" }}
-            onClick={() => setIsModalOpenDelete(true)}
-          />
-        </Tooltip>
-      </div>
+      { orderId: rowSelected }
     );
   };
 
@@ -378,7 +299,36 @@ const AdminOrder = () => {
     {
       title: "Thao tác",
       dataIndex: "action",
-      render: renderAction,
+      render: (_, record) => (
+        <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+          <Tooltip title="Xem chi tiết">
+            <EyeOutlined
+              style={{ color: "#1890ff", fontSize: "20px", cursor: "pointer" }}
+              onClick={() => handleViewDetails(record._id)}
+            />
+          </Tooltip>
+          <Tooltip title="Cập nhật trạng thái">
+            <EditOutlined
+              style={{ color: "orange", fontSize: "20px", cursor: "pointer" }}
+              onClick={() => {
+                setRowSelected(record._id);
+                setIsModalUpdateStatus(true);
+              }}
+            />
+          </Tooltip>
+          {record.status === 'Cancelled' && (
+            <Tooltip title="Xóa">
+              <DeleteOutlined
+                style={{ color: "red", fontSize: "20px", cursor: "pointer" }}
+                onClick={() => {
+                  setRowSelected(record._id);
+                  setIsModalOpenDelete(true);
+                }}
+              />
+            </Tooltip>
+          )}
+        </div>
+      ),
       align: "center",
       width: 120,
     },

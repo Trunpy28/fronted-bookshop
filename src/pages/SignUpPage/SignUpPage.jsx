@@ -24,9 +24,7 @@ const SignUpPage = () => {
   });
 
   useEffect(() => {
-    if (isSuccess && data?.status === 'OK') {
-      console.log(data);
-      
+    if (isSuccess && data?.status === 'OK') {   
       message.success('Đăng ký thành công');
       navigate('/sign-in');
     }

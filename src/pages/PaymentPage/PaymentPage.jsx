@@ -22,8 +22,8 @@ import * as OrderService from "../../services/OrderService";
 import Loading from "../../components/LoadingComponent/Loading";
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
 import {
+  createPayPalPayment,
   capturePayPalOrder,
-  createPayPalOrder,
 } from "../../services/PaypalService";
 import { useMutation } from "@tanstack/react-query";
 import QRCodeImage from "../../assets/images/QRCode.jpg";
@@ -54,7 +54,7 @@ const PaymentPage = () => {
       dispatch(resetCart());
       navigate("/order-success", {
         state: {
-          order: data.data
+          order: data.order
         },
       });
     },
@@ -86,18 +86,21 @@ const PaymentPage = () => {
     }
   };
 
-  //Phần xử lý cho paypal
-  const createPayPalOrderMutation = useMutation({
+  //Phần xử lý cho tạo thanh toán paypal trên hệ thống Paypal
+  const createPayPalPaymentMutation = useMutation({
     mutationFn: (data) => {
-      return createPayPalOrder(data);
+      return createPayPalPayment(data);
     },
     onError: () => {
       message.error("Không thể tạo đơn hàng PayPal, vui lòng thử lại!");
     },
   });
 
+  //Phần xử lý cho xác nhận thanh toán paypal
   const capturePayPalOrderMutation = useMutation({
     mutationFn: (data) => {
+      console.log(data);
+      
       return capturePayPalOrder(data);
     },
     onSuccess: () => {
@@ -108,21 +111,27 @@ const PaymentPage = () => {
     },
   });
 
+
+  //Tạo thanh toán trên hệ thống Paypal
   const handleCreatePayPalOrder = async () => {
     if (user?.access_token && totalPrice && user?.id) {
-      const data = await createPayPalOrderMutation.mutateAsync({
+      //MutateAsync để lấy được data trả về
+      const data = await createPayPalPaymentMutation.mutateAsync({
         amount: totalPrice,
         currency: "USD",
         accessToken: user?.access_token,
-        userId: user?.id,
       });
-      
+
+      //Trả về id của thanh toán trên hệ thống Paypal
       return data.id;
     }
   };
 
+  //Xử lý cho tạo đơn hàng và xác nhận thanh toán paypal
   const handleApprovePayPalOrder = async (data) => {
+    console.log(data);
     try {
+      //Tạo đơn hàng trước tiên
       const orderData = {
         paymentMethod: 'PAYPAL',
         voucherCode: voucherCode || null,
@@ -133,33 +142,36 @@ const PaymentPage = () => {
       };
       
       const orderResult = await OrderService.createOrder(orderData);
-      
+      console.log(orderResult);
       if (orderResult?.status === "OK") {
-        await capturePayPalOrderMutation.mutateAsync({
-          paymentId: data.orderID,
-          orderId: orderResult.data._id,
-          accessToken: user?.access_token,
-          userId: user?.id,
-        });
-        
-        message.success("Đặt hàng thành công!");
         dispatch(resetCart());
+        message.success("Đặt hàng thành công!");
+        const respond = await capturePayPalOrderMutation.mutateAsync({
+          paymentId: data?.orderID,
+          orderId: orderResult?.order?._id,
+          accessToken: user?.access_token,
+          userId: orderResult?.order?.user,
+        });
+        console.log(respond);
+        
         navigate("/order-success", {
           state: {
-            order: orderResult.data
+            order: respond.order
           },
         });
       } else {
         message.error("Không thể tạo đơn hàng để thanh toán PayPal!");
       }
     } catch (error) {
+      console.log(error);
+      
       message.error("Thanh toán PayPal thất bại!");
     }
   };
 
   return (
     <div style={{ background: "#f5f5fa", with: "100%", padding: "30px 15vw" }}>
-      <Loading isLoading={isLoadingCreateOrder || createPayPalOrderMutation.isPending || capturePayPalOrderMutation.isPending}>
+      <Loading isLoading={isLoadingCreateOrder || createPayPalPaymentMutation.isPending || capturePayPalOrderMutation.isPending}>
         <div>
           <h3
             style={{
