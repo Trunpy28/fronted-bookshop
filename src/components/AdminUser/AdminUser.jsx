@@ -10,6 +10,7 @@ import {
   Select,
   Space,
   Statistic,
+  Tooltip,
 } from "antd";
 import {
   PlusOutlined,
@@ -183,14 +184,18 @@ const AdminUser = () => {
   const renderAction = () => {
     return (
       <div style={{ display: "flex", gap: "20px" }}>
-        <EditOutlined
+        <Tooltip title="Chỉnh sửa thông tin">
+          <EditOutlined
           style={{ color: "orange", fontSize: "30px", cursor: "pointer" }}
-          onClick={handleDetailsUser}
-        />
-        <DeleteOutlined
-          style={{ color: "red", fontSize: "30px", cursor: "pointer" }}
-          onClick={() => setIsModalOpenDelete(true)}
-        />
+            onClick={handleDetailsUser}
+          />
+        </Tooltip>
+        <Tooltip title="Xóa">
+          <DeleteOutlined
+            style={{ color: "red", fontSize: "30px", cursor: "pointer" }}
+            onClick={() => setIsModalOpenDelete(true)}
+          />
+        </Tooltip>
       </div>
     );
   };

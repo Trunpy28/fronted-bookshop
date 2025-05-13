@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Form, Space, DatePicker, Input, InputNumber, Modal, Select, Table, message, Row, Col, Card, Statistic } from 'antd';
+import { Button, Form, Space, DatePicker, Input, InputNumber, Modal, Select, Table, message, Row, Col, Card, Statistic, Tooltip } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
@@ -138,14 +138,18 @@ const AdminVoucher = () => {
   const renderAction = (text, record) => {
     return (
       <Space size="middle">
-        <EditOutlined 
+        <Tooltip title="Chỉnh sửa thông tin">
+          <EditOutlined 
           style={{ color: "orange", fontSize: "25px", cursor: "pointer" }} 
-          onClick={() => handleOpenModal('update', record)}
-        />
-        <DeleteOutlined 
-          style={{ color: "red", fontSize: "25px", cursor: "pointer" }} 
-          onClick={() => handleDeleteModal(record)}
-        />
+            onClick={() => handleOpenModal('update', record)}
+          />
+        </Tooltip>
+        <Tooltip title="Xóa">
+          <DeleteOutlined 
+            style={{ color: "red", fontSize: "25px", cursor: "pointer" }} 
+            onClick={() => handleDeleteModal(record)}
+          />
+        </Tooltip>
       </Space>
     );
   };

@@ -1,6 +1,5 @@
 import HomePage from "../pages/HomePage/HomePage";
 import CartPage from "../pages/CartPage/CartPage";
-import ProductPage from "../pages/ProductPage/ProductPage";
 import NotFoundPage from "../pages/NotFoundPage/NotFoundPage";
 import TypeProductPage from "../pages/TypeProductPage/TypeProductPage";
 import SignInPage from "../pages/SignInPage/SignInPage";
@@ -57,12 +56,6 @@ export const routes =  [
         page: OrderSuccess,
         isShowHeader: true,
         isPrivate: true
-    },
-    { 
-        path: '/products',
-        page: ProductPage,
-        isShowHeader: true,
-        isPrivate: false
     },
     { 
         path: '/product/:type',

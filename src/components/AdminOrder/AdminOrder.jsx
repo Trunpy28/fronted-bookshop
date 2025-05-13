@@ -5,11 +5,8 @@ import {
   Form,
   Input,
   Select,
-  Space,
   Col,
   Row,
-  Statistic,
-  Card,
   Pagination,
   Tag,
   Modal,
@@ -30,7 +27,7 @@ import Loading from "../LoadingComponent/Loading";
 import * as message from "../Message/Message";
 import { useSelector } from "react-redux";
 import ModalComponent from "../ModalComponent/ModalComponent";
-import { orderConstant } from "../../constant";
+import { orderConstant } from "../../constants/constant";
 import OrderDetailsComponent from "../OrderDetailsComponent/OrderDetailsComponent";
 
 const AdminOrder = () => {

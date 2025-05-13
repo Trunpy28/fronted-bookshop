@@ -25,14 +25,18 @@ import {
   createPayPalPayment,
   capturePayPalOrder,
 } from "../../services/PaypalService";
+import { createVNPayPayment } from "../../services/VNPayService";
 import { useMutation } from "@tanstack/react-query";
 import QRCodeImage from "../../assets/images/QRCode.jpg";
+import VNPAYImage from "../../assets/images/Icon-VNPAY.webp";
+import PayPalImage from "../../assets/images/Icon-Paypal.webp";
 
 const PaymentPage = () => {
   const user = useSelector((state) => state.user);
   const location = useLocation();
   const { shippingAddress, voucherCode, totalPrice } = location?.state || {};
   const [showQRModal, setShowQRModal] = useState(false);
+  const [newOrderId, setNewOrderId] = useState(null);
 
   const [stateUserDetails] = useState({
     name: shippingAddress?.name || user?.name,
@@ -47,23 +51,18 @@ const PaymentPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { mutate: createOrderMutation, isPending: isLoadingCreateOrder } = useMutation({
+  const createOrderMutation = useMutation({
     mutationFn: (data) => OrderService.createOrder(data),
     onSuccess: (data) => {
       message.success("Đặt hàng thành công!");
       dispatch(resetCart());
-      navigate("/order-success", {
-        state: {
-          order: data.order
-        },
-      });
     },
     onError: (error) => {
       message.error("Đặt hàng thất bại: " + (error?.response?.data?.message || "Có lỗi xảy ra!"));
     }
   });
 
-  const handleAddOrder = () => {
+  const handleAddOrder = async() => {
     if (user?.access_token && totalPrice) {
       const orderData = {
         paymentMethod: payment,
@@ -74,7 +73,7 @@ const PaymentPage = () => {
         token: user?.access_token
       };
       
-      createOrderMutation(orderData);
+      return await createOrderMutation.mutateAsync(orderData);
     } else {
       message.error("Vui lòng đăng nhập để tiếp tục!");
     }
@@ -99,8 +98,6 @@ const PaymentPage = () => {
   //Phần xử lý cho xác nhận thanh toán paypal
   const capturePayPalOrderMutation = useMutation({
     mutationFn: (data) => {
-      console.log(data);
-      
       return capturePayPalOrder(data);
     },
     onSuccess: () => {
@@ -111,67 +108,98 @@ const PaymentPage = () => {
     },
   });
 
+  //Phần xử lý cho tạo thanh toán VNPay
+  const createVNPayPaymentMutation = useMutation({
+    mutationFn: (data) => {
+      const { orderId } = data;  
+      return createVNPayPayment(user?.access_token, orderId);
+    },
+    onSuccess: (data) => {
+      if (data?.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        message.error("Không thể tạo thanh toán VNPay!");
+      }
+    },
+    onError: (error) => {
+      message.error("Không thể tạo thanh toán VNPay: " + (error?.response?.data?.message || "Có lỗi xảy ra!"));
+    },
+  });
 
   //Tạo thanh toán trên hệ thống Paypal
   const handleCreatePayPalOrder = async () => {
-    if (user?.access_token && totalPrice && user?.id) {
-      //MutateAsync để lấy được data trả về
-      const data = await createPayPalPaymentMutation.mutateAsync({
-        amount: totalPrice,
-        currency: "USD",
-        accessToken: user?.access_token,
-      });
+    if (user?.access_token) {
+      //Tạo đơn hàng trước tiên
+      const orderResult = await handleAddOrder();
 
-      //Trả về id của thanh toán trên hệ thống Paypal
-      return data.id;
+      if (orderResult?.status === "OK" && orderResult?.order?._id) {
+        setNewOrderId(orderResult?.order?._id);
+
+        //MutateAsync để lấy được data trả về
+        const data = await createPayPalPaymentMutation.mutateAsync({
+          orderId: orderResult?.order?._id,
+          accessToken: user?.access_token,
+        });
+
+        //Trả về id của thanh toán trên hệ thống Paypal
+        return data.id;
+      }
     }
   };
 
   //Xử lý cho tạo đơn hàng và xác nhận thanh toán paypal
   const handleApprovePayPalOrder = async (data) => {
-    console.log(data);
     try {
-      //Tạo đơn hàng trước tiên
-      const orderData = {
-        paymentMethod: 'PAYPAL',
-        voucherCode: voucherCode || null,
-        fullName: stateUserDetails.name,
-        phone: stateUserDetails.phone,
-        address: stateUserDetails.address,
-        token: user?.access_token
-      };
+      console.log(data);
       
-      const orderResult = await OrderService.createOrder(orderData);
-      console.log(orderResult);
-      if (orderResult?.status === "OK") {
-        dispatch(resetCart());
-        message.success("Đặt hàng thành công!");
-        const respond = await capturePayPalOrderMutation.mutateAsync({
-          paymentId: data?.orderID,
-          orderId: orderResult?.order?._id,
-          accessToken: user?.access_token,
-          userId: orderResult?.order?.user,
-        });
-        console.log(respond);
+      const response = await capturePayPalOrderMutation.mutateAsync({
+        paymentId: data?.orderID,
+        orderId: newOrderId,
+        accessToken: user?.access_token,
+        userId: orderResult?.order?.user,
+      });
         
-        navigate("/order-success", {
-          state: {
-            order: respond.order
-          },
-        });
+      navigate("/order-success", {
+        state: {
+          order: response.order
+        },
+      });
+    } catch (error) {
+      message.error("Thanh toán PayPal thất bại!");
+    }
+  };
+
+  // Xử lý thanh toán VNPay
+  const handleVNPayPayment = async () => {
+    if (!user?.access_token) {
+      message.error("Vui lòng đăng nhập để tiếp tục!");
+      return;
+    }
+
+    if (!totalPrice) {
+      message.error("Không tìm thấy thông tin giá!");
+      return;
+    }
+
+    try {
+      // Tạo đơn hàng trước    
+      const orderResult = await handleAddOrder();
+      
+      if (orderResult?.status === "OK" && orderResult?.order?._id) {
+        dispatch(resetCart());
+        message.success("Tạo đơn hàng thành công!");
+        createVNPayPaymentMutation.mutate({orderId: orderResult?.order?._id});
       } else {
-        message.error("Không thể tạo đơn hàng để thanh toán PayPal!");
+        message.error("Không thể tạo đơn hàng để thanh toán VNPay!");
       }
     } catch (error) {
-      console.log(error);
-      
-      message.error("Thanh toán PayPal thất bại!");
+      message.error("Thanh toán VNPay thất bại!");
     }
   };
 
   return (
     <div style={{ background: "#f5f5fa", with: "100%", padding: "30px 15vw" }}>
-      <Loading isLoading={isLoadingCreateOrder || createPayPalPaymentMutation.isPending || capturePayPalOrderMutation.isPending}>
+      <Loading isLoading={createOrderMutation.isPending || createPayPalPaymentMutation.isPending || capturePayPalOrderMutation.isPending || createVNPayPaymentMutation.isPending}>
         <div>
           <h3
             style={{
@@ -217,18 +245,17 @@ const PaymentPage = () => {
                     <PaymentOptionCard 
                       isSelected={payment === 'VNPAY'} 
                       onClick={() => setPayment('VNPAY')}
-                      disabled
                     >
                       <div className="payment-icon">
                         <img 
-                          src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Icon-VNPAY-QR.png" 
+                          src={VNPAYImage} 
                           width={payment === 'VNPAY' ? 80 : 60} 
                           alt="VNPAY"
                         />
                       </div>
                       <div className="payment-info">
                         <h4>Thanh toán qua VNPAY</h4>
-                        <p>Quét mã QR để thanh toán (Đang phát triển)</p>
+                        <p>Thanh toán trực tuyến qua cổng thanh toán VNPAY</p>
                       </div>
                       {payment === 'VNPAY' && <CheckOutlined className="check-icon" />}
                     </PaymentOptionCard>
@@ -239,14 +266,14 @@ const PaymentPage = () => {
                     >
                       <div className="payment-icon">
                         <img 
-                          src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_111x69.jpg" 
+                          src={PayPalImage} 
                           width={payment === 'PAYPAL' ? 100 : 80} 
                           alt="PayPal"
                         />
                       </div>
                       <div className="payment-info">
                         <h4>Thanh toán qua PayPal</h4>
-                        <p>Sử dụng thẻ tín dụng quốc tế hoặc tài khoản PayPal</p>
+                        <p>Thanh toán trực tuyến qua PayPal</p>
                       </div>
                       {payment === 'PAYPAL' && <CheckOutlined className="check-icon" />}
                     </PaymentOptionCard>
@@ -298,25 +325,16 @@ const PaymentPage = () => {
                 </WrapperTotal>
               </div>
               
-              {payment === 'PAYPAL' ? (
-                <div style={{ width: "100%", marginTop: "20px" }}>
-                  <PayPalScriptProvider
-                    options={{
-                      clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID,
-                      components: "buttons",
-                      currency: "USD",
-                    }}
-                  >
-                    <PayPalButtons
-                      createOrder={handleCreatePayPalOrder}
-                      onApprove={handleApprovePayPalOrder}
-                      style={{ layout: "horizontal" }}
-                    />
-                  </PayPalScriptProvider>
-                </div>
-              ) : (
+              {payment === 'COD' && (
                 <ButtonComponent
-                  onClick={handleAddOrder}
+                  onClick={ async () => {
+                    const data = await handleAddOrder();
+                    navigate("/order-success", {
+                      state: {
+                        order: data.order
+                      },
+                    });
+                  }}
                   size={40}
                   styleButton={{
                     background: "#00a551",
@@ -333,6 +351,45 @@ const PaymentPage = () => {
                     fontWeight: "700",
                   }}
                 ></ButtonComponent>
+              )}
+
+              {payment === 'VNPAY' && (
+                <ButtonComponent
+                  onClick={handleVNPayPayment}
+                  size={40}
+                  styleButton={{
+                    background: "#0066b3",
+                    height: "54px",
+                    width: "100%",
+                    border: "none",
+                    borderRadius: "4px",
+                    marginTop: "20px"
+                  }}
+                  textbutton="Thanh toán qua VNPAY"
+                  styleTextButton={{
+                    color: "#fff",
+                    fontSize: "18px",
+                    fontWeight: "700",
+                  }}
+                ></ButtonComponent>
+              )}
+
+              {payment === 'PAYPAL' && (
+                <div style={{ width: "100%", marginTop: "20px" }}>
+                  <PayPalScriptProvider
+                    options={{
+                      clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID,
+                      components: "buttons",
+                      currency: "USD",
+                    }}
+                  >
+                    <PayPalButtons
+                      createOrder={handleCreatePayPalOrder}
+                      onApprove={handleApprovePayPalOrder}
+                      style={{ layout: "horizontal" }}
+                    />
+                  </PayPalScriptProvider>
+                </div>
               )}
             </WrapperRight>
           </div>

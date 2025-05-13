@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { WrapperHeader } from "./style";
 import {
   Button, Card, Col, Form, Input, Row, Select, Space, Statistic, InputNumber, Upload,
+  Tooltip,
 } from "antd";
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined,
@@ -256,18 +257,24 @@ const AdminProduct = () => {
       title: "Thao tác",
       render: (text, record) => (
         <Space size="middle">
-          <EyeOutlined
-            style={{ color: "blue", fontSize: "30px", cursor: "pointer" }}
-            onClick={() => handleViewDetails(record)}
-          />
-          <EditOutlined
-            style={{ color: "orange", fontSize: "30px", cursor: "pointer" }}
-            onClick={() => handleDetailsProduct(record._id)}
-          />
-          <DeleteOutlined
-            style={{ color: "red", fontSize: "30px", cursor: "pointer" }}
-            onClick={() => handleOpenDeleteModal(record._id)}
-          />
+          <Tooltip title="Xem chi tiết">
+            <EyeOutlined
+              style={{ color: "blue", fontSize: "30px", cursor: "pointer" }}
+              onClick={() => handleViewDetails(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Chỉnh sửa thông tin">
+            <EditOutlined
+              style={{ color: "orange", fontSize: "30px", cursor: "pointer" }}
+              onClick={() => handleDetailsProduct(record._id)}
+            />
+          </Tooltip>
+          <Tooltip title="Xóa">
+            <DeleteOutlined
+              style={{ color: "red", fontSize: "30px", cursor: "pointer" }}
+              onClick={() => handleOpenDeleteModal(record._id)}
+            />
+          </Tooltip>
         </Space>
       ),
     }

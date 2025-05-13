@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Card, Col, Form, Input, Row, Space, Statistic, Table, Modal } from "antd";
+import { Button, Card, Col, Form, Input, Row, Space, Statistic, Table, Modal, Tooltip } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as GenreService from "../../services/GenreService";
@@ -115,8 +115,12 @@ const AdminGenre = () => {
       dataIndex: "action",
       render: (text, record) => (
         <Space size="middle">
-          <EditOutlined style={{ color: "orange", fontSize: "30px", cursor: "pointer" }} onClick={() => handleEditGenre(record)} />
-          <DeleteOutlined style={{ color: "red", fontSize: "30px", cursor: "pointer" }} onClick={() => handleConfirmDelete(record._id)} />
+          <Tooltip title="Chỉnh sửa thông tin">
+            <EditOutlined style={{ color: "orange", fontSize: "30px", cursor: "pointer" }} onClick={() => handleEditGenre(record)} />
+          </Tooltip>
+          <Tooltip title="Xóa">
+            <DeleteOutlined style={{ color: "red", fontSize: "30px", cursor: "pointer" }} onClick={() => handleConfirmDelete(record._id)} />
+          </Tooltip>
         </Space>
       ),
     },

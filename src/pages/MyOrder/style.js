@@ -4,7 +4,7 @@ export const WrapperContainer = styled.div`
   width: 100%;
   padding: 20px 15vw;
   background-color: #f5f5fa;
-  min-height: 100vh;
+  height: fit-content;
 `;
 
 export const WrapperListOrder = styled.div`

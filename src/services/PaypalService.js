@@ -3,12 +3,11 @@ import { axiosJWT } from "./UserService";
 const apiUrl = import.meta.env.VITE_API_URL;
 
 // Tạo order PayPal
-export const createPayPalPayment = async ({ amount, currency, accessToken }) => {
+export const createPayPalPayment = async ({ orderId, accessToken }) => {
   const response = await axiosJWT.post(
     `${apiUrl}/paypal/create-payment`,
     {
-      amount,
-      currency,
+      orderId,
     },
     {
       headers: {

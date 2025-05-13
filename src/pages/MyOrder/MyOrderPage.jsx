@@ -1,4 +1,4 @@
-import { Button } from "antd";
+import { Button, Empty } from "antd";
 import React from "react";
 import {
   WrapperContainer,
@@ -51,6 +51,16 @@ const MyOrderPage = () => {
         <div style={{ width: "100%", height: "100%" }}>
           <div style={{ marginBottom: "20px", fontSize: "24px", fontWeight: "bold", textAlign: "center" }}>Đơn hàng của tôi</div>
           <WrapperListOrder>
+            {data?.length === 0 && (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <span style={{ fontSize: "16px", color: "#666" }}>
+                    Bạn chưa có đơn hàng nào
+                  </span>
+                }
+              />
+            )}
             {data?.map((order) => {
               return (
                 <WrapperItemOrder key={order._id}>

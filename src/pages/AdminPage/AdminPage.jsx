@@ -15,7 +15,6 @@ import AdminProduct from "../../components/AdminProduct/AdminProduct";
 import AdminOrder from "../../components/AdminOrder/AdminOrder";
 import AdminGenre from "../../components/AdminGenre/AdminGenre";
 import AdminInventory from "../../components/AdminInventory/AdminInventory";
-import AdminBatch from "../../components/AdminBatch/AdminBatch";
 import AdminVoucher from "../../components/AdminVoucher/AdminVoucher";
 import { useSelector } from 'react-redux';
 import { Navigate } from 'react-router-dom';
@@ -46,8 +45,6 @@ const AdminPage = () => {
         return <AdminGenre />;
       case 'inventory':
         return <AdminInventory />;
-      case 'batch':
-        return <AdminBatch />;
       case 'voucher':
         return <AdminVoucher />;
       default:
@@ -76,14 +73,6 @@ const AdminPage = () => {
       key: "product",
       label: "Sản phẩm",
       icon: <BookOutlined />,
-    },
-    {
-      type: "divider",
-    },
-    {
-      key: "batch",
-      label: "Lô hàng",
-      icon: <ContainerOutlined />,
     },
     {
       type: "divider",
@@ -124,13 +113,7 @@ const AdminPage = () => {
       <div style={{ display: "flex", marginTop: '30px' }}>
         <ConfigProvider
           theme={{
-            components: {
-              Menu: {
-                /* here is your component tokens */
-              },
-            },
             token: {
-              /* here is your global tokens */
               fontSize: 18,
             },
           }}

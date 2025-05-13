@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { axiosJWT } from './UserService';
 
 const API_URL = `${import.meta.env.VITE_API_URL}/batch`;
@@ -63,6 +62,24 @@ export const getBatchesPaginated = async (page, limit, accessToken) => {
       Authorization: `Bearer ${accessToken}`,
     },
     params: { page, limit }
+  });
+  return response.data;
+};
+
+export const addItemToBatch = async (batchId, itemData, accessToken) => {
+  const response = await axiosJWT.post(`${API_URL}/${batchId}/items`, itemData, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  return response.data;
+};
+
+export const removeItemFromBatch = async (batchId, itemId, accessToken) => {
+  const response = await axiosJWT.delete(`${API_URL}/${batchId}/items/${itemId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
   });
   return response.data;
 }; 
