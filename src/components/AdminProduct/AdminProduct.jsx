@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import { WrapperHeader } from "./style";
 import {
   Button, Card, Col, Form, Input, Row, Select, Space, Statistic, InputNumber, Upload,
-  Tooltip,
+  Tooltip, Modal,
 } from "antd";
 import {
-  PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined,
+  PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined,
 } from "@ant-design/icons";
 import TableComponent from "../TableComponent/TableComponent";
 import InputComponent from "../InputComponent/InputComponent";
@@ -29,11 +29,29 @@ const AdminProduct = () => {
   const [isModalOpenDelete, setIsModalOpenDelete] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rowSelected, setRowSelected] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [fileList, setFileList] = useState([]);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  
+  // State cho phân trang và lọc
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
+  
+  // State lưu các bộ lọc
+  const [filters, setFilters] = useState({
+    productCode: '',
+    name: '',
+    genres: [],
+    author: '',
+    publisher: ''
+  });
+  
+  // Modal lọc sản phẩm
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [searchForm] = Form.useForm();
 
   const [createForm] = Form.useForm();
   const [updateForm] = Form.useForm();
@@ -41,8 +59,16 @@ const AdminProduct = () => {
 
   // Queries và Mutations
   const queryProduct = useQuery({
-    queryKey: ["products", currentPage, pageSize],
-    queryFn: () => ProductService.getProductsPaginated(currentPage, pageSize),
+    queryKey: ["products", pagination.current, pagination.pageSize, filters],
+    queryFn: () => {
+      const options = {
+        page: pagination.current,
+        limit: pagination.pageSize,
+        ...filters
+      };
+      
+      return ProductService.getProductsPaginated(options, user?.access_token);
+    },
     keepPreviousData: true,
   });
 
@@ -216,6 +242,71 @@ const AdminProduct = () => {
     setIsDetailModalOpen(true);
   };
 
+  // Handler cho thay đổi trang
+  const handlePaginationChange = (pagination) => {
+    setPagination({
+      ...pagination,
+      current: pagination.current,
+      pageSize: pagination.pageSize,
+    });
+  };
+  
+  // Handler cho việc áp dụng bộ lọc
+  const handleApplyFilters = (values) => {
+    const cleanedFilters = {};
+    
+    // Chỉ thêm các trường không rỗng vào filters
+    if (values.productCode && values.productCode.trim() !== '') 
+      cleanedFilters.productCode = values.productCode.trim();
+    
+    if (values.name && values.name.trim() !== '') 
+      cleanedFilters.name = values.name.trim();
+    
+    if (values.genres && values.genres.length > 0) 
+      cleanedFilters.genres = values.genres;
+    
+    if (values.author && values.author.trim() !== '') 
+      cleanedFilters.author = values.author.trim();
+    
+    if (values.publisher && values.publisher.trim() !== '') 
+      cleanedFilters.publisher = values.publisher.trim();
+    
+    setFilters(cleanedFilters);
+    setPagination({
+      ...pagination,
+      current: 1,
+    });
+    setIsFilterModalVisible(false);
+  };
+  
+  // Handler reset bộ lọc
+  const handleResetFilters = () => {
+    searchForm.setFieldsValue({
+      productCode: '',
+      name: '',
+      genres: [],
+      author: '',
+      publisher: ''
+    });
+  };
+  
+  // Khi mở modal, set giá trị form từ filters hiện tại
+  useEffect(() => {
+    if (isFilterModalVisible) {
+      searchForm.setFieldsValue(filters);
+    }
+  }, [isFilterModalVisible]);
+
+  // Cập nhật tổng số bản ghi từ response
+  useEffect(() => {
+    if (queryProduct.data?.pagination) {
+      setPagination({
+        ...pagination,
+        total: queryProduct.data.pagination.total || 0,
+      });
+    }
+  }, [queryProduct.data]);
+
   const columns = [
     {
       title: "Mã hàng",
@@ -236,10 +327,7 @@ const AdminProduct = () => {
     {
       title: "Thể loại",
       dataIndex: "genre",
-      render: (text, record) => {
-        const genre = genres?.data?.find(g => g._id === record.genre);
-        return genre?.name || '';
-      }
+      render: (genre) => genre?.name || ''
     },
     {
       title: "Tác giả",
@@ -280,11 +368,6 @@ const AdminProduct = () => {
     }
   ];
 
-  const handleTableChange = (pagination) => {
-    setCurrentPage(pagination.current);
-    setPageSize(pagination.pageSize);
-  };
-
   return (
     <div>
       <WrapperHeader>Quản lý sản phẩm</WrapperHeader>
@@ -305,7 +388,7 @@ const AdminProduct = () => {
             <Card style={{ border: "1px solid #00B55F" }}>
               <Statistic
                 title="Số sản phẩm"
-                value={queryProduct.data?.total}
+                value={pagination.total}
                 formatter={(value) => (
                   <CountUp
                     end={value}
@@ -334,17 +417,28 @@ const AdminProduct = () => {
         </Row>
       </div>
 
-      <div style={{ marginTop: "20px" }}>
+      {/* Nút lọc và bảng dữ liệu */}
+      <div style={{ marginTop: 20, marginBottom: 20 }}>
+        <Button 
+          type="primary" 
+          icon={<SearchOutlined />}
+          onClick={() => setIsFilterModalVisible(true)}
+          style={{ marginBottom: 20 }}
+        >
+          Lọc sản phẩm
+        </Button>
+
         <TableComponent
           columns={columns}
-          dataSource={queryProduct.data?.products}
+          dataSource={queryProduct.data?.data}
           loading={queryProduct.isLoading}
           pagination={{
-            current: currentPage,
-            pageSize: pageSize,
-            total: queryProduct.data?.total,
-            onChange: handleTableChange,
+            ...pagination,
+            pageSizeOptions: [10, 20, 50, 100],
+            showSizeChanger: true,
+            showTotal: (total) => `Tổng ${total} bản ghi`
           }}
+          onChange={handlePaginationChange}
           onRow={(record) => {
             return {
               onClick: () => {
@@ -354,6 +448,79 @@ const AdminProduct = () => {
           }}
         />
       </div>
+
+      {/* Modal lọc sản phẩm */}
+      <Modal
+        title="Lọc sản phẩm"
+        open={isFilterModalVisible}
+        onCancel={() => setIsFilterModalVisible(false)}
+        footer={null}
+        width={800}
+      >
+        <Form
+          form={searchForm}
+          layout="vertical"
+          onFinish={handleApplyFilters}
+          initialValues={filters}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="productCode" label="Mã hàng">
+                <Input placeholder="Nhập mã hàng" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="name" label="Tên sách">
+                <Input placeholder="Nhập tên sách" />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="genres" label="Thể loại">
+                <Select
+                  mode="multiple"
+                  allowClear
+                  placeholder="Chọn thể loại"
+                  options={genres?.data?.map((genre) => ({
+                    label: genre.name,
+                    value: genre._id,
+                  }))}
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="author" label="Tác giả">
+                <Input placeholder="Nhập tên tác giả" />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="publisher" label="Nhà xuất bản">
+                <Input placeholder="Nhập tên nhà xuất bản" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row>
+            <Col span={24} style={{ textAlign: 'right' }}>
+              <Button 
+                onClick={handleResetFilters}
+                style={{ marginRight: 8 }}
+              >
+                Đặt lại
+              </Button>
+              <Button type="primary" htmlType="submit">
+                Áp dụng
+              </Button>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
 
       {/* Modal thêm mới */}
       <ModalComponent

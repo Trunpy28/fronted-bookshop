@@ -69,11 +69,16 @@ export const deleteManyProduct = async (data, access_token) => {
     return res.data;
 };
 
-export const getProductsPaginated = async (page, limit, access_token) => {
-    const response = await axios.get(`${productApiUrl}/get-products-paginated?page=${page}&limit=${limit}`, {
+export const getProductsPaginated = async (options, access_token) => {
+    if(options.genres && options.genres.length > 0) {
+        options.genres = options.genres.join(',');
+    }
+    
+    const response = await axiosJWT.get(`${productApiUrl}/get-products-paginated`, {
         headers: {
             Authorization: `Bearer ${access_token}`,
         },
+        params: options
     });
     return response.data;
 };

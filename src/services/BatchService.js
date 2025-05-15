@@ -56,12 +56,16 @@ export const deleteBatch = async (id, accessToken) => {
   return response.data;
 };
 
-export const getBatchesPaginated = async (page, limit, accessToken) => {
+export const getBatchesPaginated = async (page, limit, accessToken, filters = {}) => {
   const response = await axiosJWT.get(`${API_URL}/paginated`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-    params: { page, limit }
+    params: { 
+      page, 
+      limit,
+      ...filters
+    }
   });
   return response.data;
 };

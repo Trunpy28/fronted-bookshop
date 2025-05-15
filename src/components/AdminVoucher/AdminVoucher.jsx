@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Form, Space, DatePicker, Input, InputNumber, Modal, Select, Table, message, Row, Col, Card, Statistic, Tooltip } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Button, Form, Space, DatePicker, Input, InputNumber, Modal, Select, message, Row, Col, Card, Statistic, Tooltip, Checkbox } from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 import locale from 'antd/es/date-picker/locale/vi_VN';
-
 import * as VoucherService from '../../services/VoucherService';
 import { WrapperHeader } from '../AdminProduct/style';
 import Loading from '../LoadingComponent/Loading';
@@ -21,8 +20,10 @@ const AdminVoucher = () => {
   const [isModalOpenDelete, setIsModalOpenDelete] = useState(false);
   const [typeModal, setTypeModal] = useState('');
   const [form] = Form.useForm();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
   const [discountType, setDiscountType] = useState('percentage');
 
   // Lấy danh sách voucher
@@ -154,12 +155,53 @@ const AdminVoucher = () => {
     );
   };
 
+  const handlePaginationChange = (pagination) => {
+    setPagination({
+      current: pagination.current,
+      pageSize: pagination.pageSize,
+    });
+  };
+
   const columns = [
     {
       title: 'Mã',
       dataIndex: 'code',
       key: 'code',
       render: (text) => <b>{text}</b>,
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm kiếm mã voucher"
+            value={selectedKeys[0]}
+            onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ width: 188, marginBottom: 8, display: 'block' }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Đặt lại
+            </Button>
+          </Space>
+        </div>
+      ),
+      filterIcon: filtered => <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
+      onFilter: (value, record) =>
+        record.code
+          ? record.code.toString().toLowerCase().includes(value.toLowerCase())
+          : '',
     },
     {
       title: 'Mô tả',
@@ -188,18 +230,135 @@ const AdminVoucher = () => {
       dataIndex: 'startDate',
       key: 'startDate',
       render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <DatePicker
+            value={selectedKeys[0] ? dayjs(selectedKeys[0], 'DD/MM/YYYY') : null}
+            onChange={(date) => {
+              if (date) {
+                const formattedDate = date.format('DD/MM/YYYY');
+                setSelectedKeys([formattedDate]);
+              } else {
+                setSelectedKeys([]);
+              }
+            }}
+            style={{ width: 188, marginBottom: 8, display: 'block' }}
+            locale={locale}
+            format="DD/MM/YYYY"
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Đặt lại
+            </Button>
+          </Space>
+        </div>
+      ),
+      filterIcon: filtered => <FilterOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
+      onFilter: (value, record) => {
+        if (!record.startDate) return false;
+        const startDateStr = dayjs(record.startDate).format('DD/MM/YYYY');
+        return startDateStr === value;
+      },
     },
     {
       title: 'Thời gian kết thúc',
       dataIndex: 'endDate',
       key: 'endDate',
       render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <DatePicker
+            value={selectedKeys[0] ? dayjs(selectedKeys[0], 'DD/MM/YYYY') : null}
+            onChange={(date) => {
+              if (date) {
+                const formattedDate = date.format('DD/MM/YYYY');
+                setSelectedKeys([formattedDate]);
+              } else {
+                setSelectedKeys([]);
+              }
+            }}
+            style={{ width: 188, marginBottom: 8, display: 'block' }}
+            locale={locale}
+            format="DD/MM/YYYY"
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Đặt lại
+            </Button>
+          </Space>
+        </div>
+      ),
+      filterIcon: filtered => <FilterOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
+      onFilter: (value, record) => {
+        if (!record.endDate) return false;
+        const endDateStr = dayjs(record.endDate).format('DD/MM/YYYY');
+        return endDateStr === value;
+      },
     },
     {
       title: 'Trạng thái',
       dataIndex: 'isActive',
       key: 'isActive',
       render: (status) => (status ? 'Kích hoạt' : 'Vô hiệu'),
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Checkbox.Group
+            value={selectedKeys}
+            onChange={setSelectedKeys}
+            style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: 8 }}
+          >
+            <Checkbox value={true}>Kích hoạt</Checkbox>
+            <Checkbox value={false}>Vô hiệu</Checkbox>
+          </Checkbox.Group>
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Lọc
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Đặt lại
+            </Button>
+          </Space>
+        </div>
+      ),
+      filterIcon: filtered => <FilterOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
+      onFilter: (value, record) => {
+        return record.isActive === value;
+      },
     },
     {
       title: 'Hành động',
@@ -210,11 +369,6 @@ const AdminVoucher = () => {
 
   // Định dạng thời gian
   const dateFormat = 'DD/MM/YYYY HH:mm';
-
-  const handleTableChange = (page, pageSize) => {
-    setCurrentPage(page);
-    setPageSize(pageSize);
-  };
 
   return (
     <Loading isLoading={isLoadingVouchers || mutationCreate.isPending || mutationUpdate.isPending || mutationDelete.isPending}>
@@ -248,13 +402,13 @@ const AdminVoucher = () => {
             dataSource={vouchersData?.data}
             loading={isLoadingVouchers}
             pagination={{
-              current: currentPage,
-              pageSize: pageSize,
+              ...pagination,
               total: vouchersData?.total,
-              onChange: handleTableChange,
               pageSizeOptions: [10, 20, 50, 100],
-              showSizeChanger: true
+              showSizeChanger: true,
+              showTotal: (total) => `Tổng ${total} bản ghi`
             }}
+            onChange={handlePaginationChange}
           />
         </div>
         <Modal

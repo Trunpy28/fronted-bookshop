@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button, Card, Col, Form, Input, Row, Space, Statistic, Table, Modal, Tooltip } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as GenreService from "../../services/GenreService";
 import Loading from "../LoadingComponent/Loading";
@@ -14,6 +14,10 @@ const AdminGenre = () => {
   const [isModalOpenUpdate, setIsModalOpenUpdate] = useState(false);
   const [isModalOpenDelete, setIsModalOpenDelete] = useState(false);
   const [selectedGenre, setSelectedGenre] = useState(null);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+  });
   const [formCreate] = Form.useForm();
   const [formUpdate] = Form.useForm();
   const user = useSelector((state) => state.user);
@@ -28,6 +32,7 @@ const AdminGenre = () => {
     mutationFn: (data) => GenreService.createGenre(data, user?.access_token),
     onSuccess: () => {
       message.success("Thêm thể loại thành công");
+      formCreate.resetFields();
       refetch();
       setIsModalOpenCreate(false);
     },
@@ -101,10 +106,51 @@ const AdminGenre = () => {
     }
   };
 
+  const handlePaginationChange = (pagination) => {
+    setPagination({
+      current: pagination.current,
+      pageSize: pagination.pageSize,
+    });
+  };
+
   const columns = [
     {
       title: "Tên thể loại",
       dataIndex: "name",
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Tìm kiếm tên thể loại"
+            value={selectedKeys[0]}
+            onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ width: 188, marginBottom: 8, display: 'block' }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm
+            </Button>
+            <Button
+              onClick={() => clearFilters()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Đặt lại
+            </Button>
+          </Space>
+        </div>
+      ),
+      filterIcon: filtered => <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />,
+      onFilter: (value, record) =>
+        record.name
+          ? record.name.toString().toLowerCase().includes(value.toLowerCase())
+          : '',
     },
     {
       title: "Mô tả",
@@ -164,6 +210,13 @@ const AdminGenre = () => {
           columns={columns}
           data={dataTable}
           isLoading={isLoadingGenres}
+          pagination={{
+            ...pagination,
+            pageSizeOptions: [10, 20, 50, 100],
+            showSizeChanger: true,
+            showTotal: (total) => `Tổng ${total} bản ghi`
+          }}
+          onChange={handlePaginationChange}
           onRow={(record, rowIndex) => {
             return {
               onClick: (event) => {

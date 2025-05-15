@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button, Card, Col, Form, Input, Row, Space, Statistic, Modal, InputNumber, DatePicker, Select, Table, Tooltip } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, ShoppingCartOutlined, ProductOutlined } from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined, ShoppingCartOutlined, ProductOutlined, FilterOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as BatchService from "../../services/BatchService";
 import * as ProductService from "../../services/ProductService";
@@ -12,6 +12,7 @@ import TableComponent from "../TableComponent/TableComponent";
 import dayjs from 'dayjs';
 import locale from 'antd/es/date-picker/locale/vi_VN';
 import { convertPrice } from "../../utils";
+const { RangePicker } = DatePicker;
 
 const AdminInventory = () => {
   const [isModalAddOpen, setIsModalAddOpen] = useState(false);
@@ -30,10 +31,13 @@ const AdminInventory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [productOptions, setProductOptions] = useState([]);
+  const [filterForm] = Form.useForm();
+  const [filters, setFilters] = useState({});
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   const queryBatches = useQuery({
-    queryKey: ["admin-batches", currentPage, pageSize],
-    queryFn: () => BatchService.getBatchesPaginated(currentPage, pageSize, user?.access_token),
+    queryKey: ["admin-batches", currentPage, pageSize, filters],
+    queryFn: () => BatchService.getBatchesPaginated(currentPage, pageSize, user?.access_token, filters),
     enabled: !!user?.access_token && user?.isAdmin && !!currentPage && !!pageSize,
     keepPreviousData: true,
   });
@@ -261,6 +265,60 @@ const AdminInventory = () => {
     setPageSize(pageSize);
   };
 
+  const handleApplyFilter = async () => {
+    try {
+      const values = await filterForm.validateFields();
+      
+      // Xử lý giá trị ngày nếu có
+      const formattedFilters = { ...values };
+      
+      if (values.dateRange) {
+        // Kiểm tra từng giá trị trong mảng dateRange
+        if (values.dateRange[0]) {
+          formattedFilters.startDate = values.dateRange[0].format('YYYY-MM-DD');
+        }
+        
+        if (values.dateRange[1]) {
+          formattedFilters.endDate = values.dateRange[1].format('YYYY-MM-DD');
+        }
+        
+        // Xóa trường dateRange vì BE không cần
+        delete formattedFilters.dateRange;
+      }
+      
+      setFilters(formattedFilters);
+      setCurrentPage(1); // Reset về trang 1 khi lọc
+      setIsFilterModalOpen(false);
+    } catch (error) {
+      console.error("Lỗi validation:", error);
+    }
+  };
+
+  const handleResetFilter = () => {
+    filterForm.resetFields();
+  };
+
+  // Nạp giá trị filter vào form khi mở modal
+  useEffect(() => {
+    if (isFilterModalOpen) {
+      const formValues = {...filters};
+      
+      // Chuyển đổi startDate và endDate thành dateRange nếu có
+      if (formValues.startDate || formValues.endDate) {
+        formValues.dateRange = [
+          formValues.startDate ? dayjs(formValues.startDate) : null,
+          formValues.endDate ? dayjs(formValues.endDate) : null
+        ];
+        
+        // Xóa các trường riêng lẻ
+        delete formValues.startDate;
+        delete formValues.endDate;
+      }
+      
+      filterForm.setFieldsValue(formValues);
+    }
+  }, [isFilterModalOpen, filters]);
+
   const columns = [
     {
       title: "Nhà cung cấp",
@@ -355,7 +413,16 @@ const AdminInventory = () => {
           </Row>
         </div>
         
-        <div style={{ marginTop: "20px" }}>
+        <div style={{ marginTop: 20, marginBottom: 20 }}>
+          <Button 
+            type="primary" 
+            icon={<FilterOutlined />}
+            onClick={() => setIsFilterModalOpen(true)}
+            style={{ marginBottom: 20 }}
+          >
+            Lọc lô hàng
+          </Button>
+
           <TableComponent
             columns={columns}
             dataSource={queryBatches.data?.batches}
@@ -365,6 +432,7 @@ const AdminInventory = () => {
               pageSize: pageSize,
               total: queryBatches.data?.total,
               onChange: handleTableChange,
+              showTotal: (total) => `Tổng ${total} bản ghi`
             }}
           />
         </div>
@@ -685,6 +753,40 @@ const AdminInventory = () => {
               rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
             >
               <InputNumber min={1} style={{ width: '100%' }} />
+            </Form.Item>
+          </Form>
+        </Modal>
+
+        {/* Modal lọc lô hàng */}
+        <Modal
+          title="Lọc lô hàng"
+          open={isFilterModalOpen}
+          onCancel={() => setIsFilterModalOpen(false)}
+          footer={[
+            <Button key="reset" onClick={handleResetFilter}>
+              Đặt lại
+            </Button>,
+            <Button key="submit" type="primary" onClick={handleApplyFilter}>
+              Áp dụng
+            </Button>,
+          ]}
+          initialValues={filters}
+        >
+          <Form form={filterForm} layout="vertical">
+            <Form.Item label="Nhà cung cấp" name="supplierName">
+              <Input placeholder="Nhập tên nhà cung cấp" />
+            </Form.Item>
+            <Form.Item label="Mã lô hàng" name="batchId">
+              <Input placeholder="Nhập mã lô hàng" />
+            </Form.Item>
+            <Form.Item label="Khoảng thời gian nhập lô" name="dateRange">
+              <RangePicker 
+                style={{ width: '100%' }} 
+                format="DD/MM/YYYY" 
+                locale={locale}
+                placeholder={["Từ ngày", "Đến ngày"]}
+                allowEmpty={[true, true]}
+              />
             </Form.Item>
           </Form>
         </Modal>
