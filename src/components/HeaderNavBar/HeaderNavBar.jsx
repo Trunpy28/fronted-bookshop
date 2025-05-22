@@ -22,7 +22,7 @@ const HeaderNavBar = () => {
       key: genre._id,
       label: <span style={{ paddingLeft: '20px' }}>{genre.name}</span>,
       onClick: () => {
-        navigate(`/product/genre/${genre._id}`, { state: genre.name });
+        navigate(`/products?genres=${genre._id}`);
       },
     }
   })

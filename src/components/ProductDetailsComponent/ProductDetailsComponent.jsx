@@ -206,6 +206,10 @@ const ProductDetailsComponent = ({ productId }) => {
                         <span className="font-medium">{productDetails?.data?.productCode}</span>
                       </div>
                       <div className="flex gap-4">
+                        <span className="text-gray-500">Thể loại:</span>
+                        <span className="font-medium">{productDetails?.data?.genre.name}</span>
+                      </div>
+                      <div className="flex gap-4">
                         <span className="text-gray-500">Tác giả:</span>
                         <span className="font-medium">{productDetails?.data?.author}</span>
                       </div>

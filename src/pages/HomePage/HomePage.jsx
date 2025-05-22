@@ -12,7 +12,7 @@ import * as ProductService from "../../services/ProductService";
 import * as GenreService from "../../services/GenreService";
 import Loading from "../../components/LoadingComponent/Loading";
 import { Button, ConfigProvider } from "antd";
-import { ArrowRightOutlined } from "@ant-design/icons";
+import { ArrowRightOutlined, AppstoreOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
 const HomePage = () => {
@@ -37,12 +37,52 @@ const HomePage = () => {
     navigate(`/product?genre=${genreId}`);
   };
 
+  const handleViewAllProducts = () => {
+    navigate('/products');
+  };
+
   return (
     <PageContainer>
       <div style={{ marginBottom: "30px", borderRadius: "12px", overflow: "hidden" }}>
         <SliderComponent
           arrImages={[slider1, slider2, slider3, slider4, slider5]}
         />
+      </div>
+      
+      {/* Nút "Xem tất cả sản phẩm" */}
+      <div style={{ textAlign: "center", marginBottom: "30px" }}>
+        <ConfigProvider
+          theme={{
+            components: {
+              Button: {
+                colorPrimary: '#00A651',
+                colorPrimaryHover: '#008E45',
+                colorPrimaryActive: '#007A3B',
+                defaultBg: '#00A651',
+                defaultColor: '#ffffff',
+                defaultBorderColor: '#00A651',
+                defaultHoverBg: '#008E45',
+                defaultHoverColor: '#ffffff',
+                defaultHoverBorderColor: '#008E45',
+              }
+            }
+          }}
+        >
+          <Button 
+            type="primary" 
+            size="large" 
+            icon={<AppstoreOutlined />}
+            onClick={handleViewAllProducts}
+            style={{ 
+              borderRadius: "6px", 
+              padding: "0 30px",
+              height: "48px",
+              fontSize: "16px"
+            }}
+          >
+            Xem tất cả sản phẩm
+          </Button>
+        </ConfigProvider>
       </div>
       
       <Loading isLoading={isLoadingGenres}>

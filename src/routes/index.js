@@ -19,11 +19,18 @@ import ChangePassword from "../pages/ChangePassword/ChangePassword";
 import ForbiddenPage from "../pages/ForbiddenPage/ForbiddenPage";
 import ShippingAddressPage from "../pages/ShippingAddress/ShippingAddressPage";
 import VoucherPage from "../pages/VoucherPage/VoucherPage";
+import ProductListPage from "../pages/ProductListPage/ProductListPage";
 
 export const routes =  [
     { 
         path: '/',
         page: HomePage,
+        isShowHeader: true,
+        isPrivate: false
+    },
+    { 
+        path: '/products',
+        page: ProductListPage,
         isShowHeader: true,
         isPrivate: false
     },
