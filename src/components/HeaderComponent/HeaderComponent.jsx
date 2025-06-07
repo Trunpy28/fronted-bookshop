@@ -17,17 +17,18 @@ import {
   SearchOutlined,
   ContainerOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import * as UserService from "../../services/UserService";
 import { resetUser } from "../../redux/slices/userSlice";
 import Loading from "../LoadingComponent/Loading";
-import { searchProduct } from "../../redux/slices/productSlice";
 import { resetCart } from "../../redux/slices/cartSlice";
 const { Search } = Input;
 
 const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const user = useSelector((state) => state.user);
   const cart = useSelector((state) => state.cart);
   const dispatch = useDispatch();
@@ -56,6 +57,14 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
     setUserAvatar(user.avatar);
     setLoading(false);
   }, [user?.name, user.email, user?.avatar]);
+  
+  // Kiểm tra nếu đang ở trang products và lấy tham số tìm kiếm từ URL
+  useEffect(() => {
+    if (location.pathname === '/products') {
+      const searchQuery = searchParams.get('q') || '';
+      setSearch(searchQuery);
+    }
+  }, [location.pathname, searchParams]);
 
   const content = (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -109,14 +118,32 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
   );
 
   const onSearch = (value, event) => {
+    if (!value) {
+      // Nếu tìm kiếm rỗng và đang ở trang products, xóa tham số q
+      if (location.pathname === '/products') {
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('q');
+        setSearchParams(newSearchParams);
+      }
+      return;
+    }
+    
+    // Chuyển hướng đến trang products với tham số q
+    navigate(`/products?q=${encodeURIComponent(value)}`);
+  };
+  
+  // Xử lý khi người dùng thay đổi giá trị ô tìm kiếm
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
     setSearch(value);
-    dispatch(searchProduct(value));
   };
 
   useLayoutEffect(() => {
-    setSearch('');
-    dispatch(searchProduct(''));
-  },[window.location.href])
+    // Reset giá trị tìm kiếm khi rời khỏi trang products
+    if (location.pathname !== '/products') {
+      setSearch('');
+    }
+  }, [location.pathname]);
 
   return (
     <div>
@@ -152,7 +179,7 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
                 size="large"
                 onSearch={onSearch}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={handleSearchChange}
               />
             </ConfigProvider>
           )}

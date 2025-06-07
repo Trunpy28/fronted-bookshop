@@ -3,7 +3,7 @@ import React, { Fragment, useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { routes } from "./routes";
 import DefaultComponent from "./components/DefaultComponent/DefaultComponent";
-import { isJsonString } from "./utils";
+import { isJsonString } from "./utils/utils";
 import { jwtDecode } from "jwt-decode";
 import * as UserService from "./services/UserService";
 import { useDispatch, useSelector } from "react-redux";

@@ -8,7 +8,7 @@ import Loading from "../../components/LoadingComponent/Loading";
 import { CloseCircleOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { Button, message, Modal, Image, Space, Form, Input } from "antd";
-import { convertPrice } from "../../utils";
+import { convertPrice } from "../../utils/utils";
 import QRCodeImage from "../../assets/images/QRCode.jpg";
 import { QRCodeWrapper, PaymentInstructions } from "../PaymentPage/style";
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";

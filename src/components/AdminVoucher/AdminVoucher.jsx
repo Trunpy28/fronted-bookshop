@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Button, Form, Space, DatePicker, Input, InputNumber, Modal, Select, message, Row, Col, Card, Statistic, Tooltip, Checkbox } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
+import { Button, Form, Space, DatePicker, Input, InputNumber, Modal, Select, message, Row, Col, Card, Statistic, Tooltip, Checkbox, Upload, Image, Tag } from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined, FilterOutlined, UploadOutlined, DollarOutlined, PercentageOutlined, CalendarOutlined, CreditCardOutlined } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
@@ -42,9 +42,16 @@ const AdminVoucher = () => {
     mutationFn: (data) => {
       const formattedData = {
         ...data,
+        description: data.description || '',
         startDate: data.startDate.format('YYYY-MM-DD HH:mm:ss'),
-        endDate: data.endDate.format('YYYY-MM-DD HH:mm:ss')
+        endDate: data.endDate.format('YYYY-MM-DD HH:mm:ss'),
       };
+      
+      // Nếu có file ảnh
+      if (data.image && data.image.fileList && data.image.fileList.length > 0 && data.image.fileList[0].originFileObj) {
+        formattedData.image = data.image.fileList[0].originFileObj;
+      }
+      
       return VoucherService.createVoucher(formattedData, user?.access_token);
     },
     onSuccess: () => {
@@ -61,9 +68,16 @@ const AdminVoucher = () => {
     mutationFn: ({ id, data }) => {
       const formattedData = {
         ...data,
+        description: data.description || '',
         startDate: data.startDate?.format ? data.startDate.format('YYYY-MM-DD HH:mm:ss') : data.startDate,
         endDate: data.endDate?.format ? data.endDate.format('YYYY-MM-DD HH:mm:ss') : data.endDate
       };
+      
+      // Chỉ thêm image vào dữ liệu nếu có tải lên ảnh mới
+      if (data.image && data.image.fileList && data.image.fileList.length > 0 && data.image.fileList[0].originFileObj) {
+        formattedData.image = data.image.fileList[0].originFileObj;
+      }
+      
       return VoucherService.updateVoucher(id, formattedData, user?.access_token);
     },
     onSuccess: () => {
@@ -167,7 +181,7 @@ const AdminVoucher = () => {
       title: 'Mã',
       dataIndex: 'code',
       key: 'code',
-      render: (text) => <b>{text}</b>,
+      render: (text) => <Tag color="blue" style={{ fontSize: '14px', padding: '4px 8px' }}>{text}</Tag>,
       filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
         <div style={{ padding: 8 }}>
           <Input
@@ -207,29 +221,85 @@ const AdminVoucher = () => {
       title: 'Mô tả',
       dataIndex: 'description',
       key: 'description',
-      render: (text) => <div style={{ maxWidth: '200px', wordWrap: 'break-word' }}>{text}</div>,
+      render: (text) => (
+        <div style={{ maxWidth: '200px', minWidth: '150px' }}>
+          <Tooltip title={text || ''}>
+            <div style={{ 
+              wordWrap: 'break-word', 
+              overflow: 'hidden', 
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical'
+            }}>
+              {text || ''}
+            </div>
+          </Tooltip>
+        </div>
+      ),
+    },
+    {
+      title: 'Hình ảnh',
+      dataIndex: 'image',
+      key: 'image',
+      render: (image) => (
+        <div style={{ textAlign: 'center' }}>
+          {image ? (
+            <Image
+              src={image}
+              alt="Ảnh voucher"
+              style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: '4px' }}
+              preview={{ src: image }}
+            />
+          ) : (
+            <span>Không có ảnh</span>
+          )}
+        </div>
+      ),
     },
     {
       title: 'Giảm giá',
       dataIndex: 'discountType',
       key: 'discountType',
       render: (type, record) => (
-        <span>
-          {type === 'percentage' ? `${record.discountValue}%` : `${record.discountValue.toLocaleString('vi-VN')} đ`}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {type === 'percentage' ? (
+            <>
+              <PercentageOutlined style={{ marginRight: '8px', color: '#722ed1' }} />
+              <span style={{ fontWeight: 'bold', color: '#722ed1' }}>
+                {record.discountValue}%
+              </span>
+            </>
+          ) : (
+            <>
+              <span style={{ fontWeight: 'bold', color: '#52c41a' }}>
+                {record.discountValue.toLocaleString('vi-VN')} đ
+              </span>
+            </>
+          )}
+        </div>
       ),
     },
     {
       title: 'Đơn hàng tối thiểu',
       dataIndex: 'minOrderValue',
       key: 'minOrderValue',
-      render: (value) => value.toLocaleString('vi-VN') + ' đ',
+      render: (value) => (
+        <div style={{ fontWeight: 'bold', color: 'red' }}>
+          {value.toLocaleString('vi-VN')} đ
+        </div>
+      ),
     },
     {
       title: 'Thời gian bắt đầu',
       dataIndex: 'startDate',
       key: 'startDate',
-      render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+      render: (date) => (
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <CalendarOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+          <span>{dayjs(date).format('DD/MM/YYYY HH:mm')}</span>
+        </div>
+      ),
       filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
         <div style={{ padding: 8 }}>
           <DatePicker
@@ -277,7 +347,12 @@ const AdminVoucher = () => {
       title: 'Thời gian kết thúc',
       dataIndex: 'endDate',
       key: 'endDate',
-      render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+      render: (date) => (
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <CalendarOutlined style={{ marginRight: '8px', color: '#f5222d' }} />
+          <span>{dayjs(date).format('DD/MM/YYYY HH:mm')}</span>
+        </div>
+      ),
       filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
         <div style={{ padding: 8 }}>
           <DatePicker
@@ -325,7 +400,11 @@ const AdminVoucher = () => {
       title: 'Trạng thái',
       dataIndex: 'isActive',
       key: 'isActive',
-      render: (status) => (status ? 'Kích hoạt' : 'Vô hiệu'),
+      render: (status) => (
+        <Tag color={status ? 'success' : 'error'} style={{ fontSize: '14px', padding: '2px 10px' }}>
+          {status ? 'Kích hoạt' : 'Vô hiệu'}
+        </Tag>
+      ),
       filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
         <div style={{ padding: 8 }}>
           <Checkbox.Group
@@ -387,10 +466,37 @@ const AdminVoucher = () => {
           >
             <PlusOutlined style={{ fontSize: '40px' }} />
           </Button>
-          <Row gutter={40} style={{ width: "40vw" }}>
-            <Col span={12}>
-              <Card style={{ border: "1px solid #00B55F" }}>
-                <Statistic title="Tổng số mã" value={vouchersData?.data?.length || 0} />
+          <Row gutter={40} style={{ width: "30vw" }}>
+            <Col span={14}>
+              <Card 
+                style={{ 
+                  border: "1px solid #00B55F", 
+                  padding: "12px", 
+                  borderRadius: "6px",
+                  boxShadow: "0 2px 6px rgba(0, 181, 95, 0.1)"
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <div style={{ 
+                    backgroundColor: "#f6ffed", 
+                    width: "50px", 
+                    height: "50px", 
+                    borderRadius: "50%", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center",
+                    marginRight: "12px",
+                    border: "1px solid #b7eb8f"
+                  }}>
+                    <CreditCardOutlined style={{ fontSize: "24px", color: "#00B55F" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "16px", color: "#8c8c8c", marginBottom: "4px" }}>Tổng số mã</div>
+                    <div style={{ fontSize: "26px", fontWeight: "bold", color: "#00B55F", lineHeight: "1" }}>
+                      {vouchersData?.data?.length || 0}
+                    </div>
+                  </div>
+                </div>
               </Card>
             </Col>
           </Row>
@@ -401,6 +507,7 @@ const AdminVoucher = () => {
             columns={columns}
             dataSource={vouchersData?.data}
             loading={isLoadingVouchers}
+            bordered
             pagination={{
               ...pagination,
               total: vouchersData?.total,
@@ -445,6 +552,20 @@ const AdminVoucher = () => {
 
             <Form.Item label="Mô tả" name="description">
               <TextArea rows={2} placeholder="Nhập mô tả mã giảm giá" />
+            </Form.Item>
+
+            <Form.Item 
+              label="Hình ảnh"
+              name="image"
+            >
+              <Upload
+                listType="picture"
+                maxCount={1}
+                beforeUpload={() => false} // Ngăn upload tự động
+                accept="image/*"
+              >
+                <Button icon={<UploadOutlined />}>Tải lên ảnh</Button>
+              </Upload>
             </Form.Item>
 
             <Form.Item
@@ -543,4 +664,4 @@ const AdminVoucher = () => {
   );
 };
 
-export default AdminVoucher; 
+export default AdminVoucher;

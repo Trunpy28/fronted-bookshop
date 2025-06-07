@@ -20,7 +20,7 @@ import {
   EyeOutlined
 } from "@ant-design/icons";
 import TableComponent from "../TableComponent/TableComponent";
-import { convertPrice, timeTranform } from "../../utils";
+import { convertPrice, timeTranform } from "../../utils/utils";
 import * as OrderService from "../../services/OrderService";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Loading from "../LoadingComponent/Loading";
@@ -244,12 +244,24 @@ const AdminOrder = () => {
       dataIndex: "orderCode",
       align: "center",
       width: 100,
+      render: (text) => (
+        <span style={{ 
+          backgroundColor: '#f5f5f5', 
+          padding: '3px 6px', 
+          borderRadius: '4px',
+          fontFamily: 'monospace',
+          border: '1px solid #e8e8e8'
+        }}>
+          {text}
+        </span>
+      )
     },
     {
       title: "Tên khách hàng",
       dataIndex: "fullName",
       align: "center",
       width: 180,
+      render: (text) => <span style={{ fontWeight: '500', color: '#1677ff' }}>{text}</span>
     },
     {
       title: "Số điện thoại",
@@ -375,6 +387,7 @@ const AdminOrder = () => {
           data={dataTable}
           isLoading={isLoadingOrders}
           pagination={false}
+          bordered
           onRow={(record, rowIndex) => {
             return {
               onClick: (event) => {

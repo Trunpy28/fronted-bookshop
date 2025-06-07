@@ -15,7 +15,7 @@ import {
 import { DeleteOutlined, EnvironmentOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
-import { convertPrice } from "../../utils";
+import { convertPrice } from "../../utils/utils";
 import ModalComponent from "../../components/ModalComponent/ModalComponent";
 import StepComponent from "../../components/StepConponent/StepComponent";
 import * as CartService from "../../services/CartService";
@@ -133,6 +133,7 @@ const CartPage = () => {
       return VoucherService.getVoucherByCode(appliedVoucherCode);
     },
     enabled: !!appliedVoucherCode && !!user?.access_token,
+    retry: false
   });
 
   const discountPrice = useMemo(() => {
@@ -443,12 +444,11 @@ const CartPage = () => {
                             }
                             style={{
                               cursor: "pointer",
-                              transition: "color 0.2s",
                             }}
                             onMouseOver={(e) =>
                               (e.target.style.color = "#00a551")
                             }
-                            onMouseOut={(e) => (e.target.style.color = "")}
+                            onMouseOut={(e) => (e.target.style.color = "black")}
                           >
                             {item?.product?.name}
                           </WrapperNameProductCart>

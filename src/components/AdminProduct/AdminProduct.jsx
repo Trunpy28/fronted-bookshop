@@ -2,14 +2,15 @@ import React, { useEffect, useState } from "react";
 import { WrapperHeader } from "./style";
 import {
   Button, Card, Col, Form, Input, Row, Select, Space, Statistic, InputNumber, Upload,
-  Tooltip, Modal,
+  Tooltip, Modal, Tag,
 } from "antd";
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined,
+  BookOutlined,
 } from "@ant-design/icons";
 import TableComponent from "../TableComponent/TableComponent";
 import InputComponent from "../InputComponent/InputComponent";
-import { convertPrice } from "../../utils";
+import { convertPrice } from "../../utils/utils";
 import * as ProductService from "../../services/ProductService";
 import * as GenreService from "../../services/GenreService";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -310,24 +311,40 @@ const AdminProduct = () => {
   const columns = [
     {
       title: "Mã hàng",
-      dataIndex: "productCode"
+      dataIndex: "productCode",
+      render: (text) => (
+        <span style={{ fontSize: '14px', backgroundColor: '#f5f5f5', padding: '2px 6px', borderRadius: '4px' }}>{text}</span>
+      )
     },
     {
       title: "Tên sách",
       dataIndex: "name",
-      render: (text) => <a>{text}</a>
+      render: (text) => (
+        <div style={{ fontWeight: "bold", color: "#1677ff", fontSize: "15px" }}>{text}</div>
+      )
     },
     {
       title: "Giá bìa",
       dataIndex: "originalPrice",
       render: (text) => (
-        <span style={{ color: "green", fontWeight: "bold" }}>{convertPrice(text)}</span>
+        <div style={{ 
+          color: "#f5222d", 
+          fontWeight: "bold", 
+          fontSize: "16px",
+        }}>
+          {convertPrice(text)}
+        </div>
       )
     },
     {
       title: "Thể loại",
       dataIndex: "genre",
-      render: (genre) => genre?.name || ''
+      render: (genre) => (
+        <Tag color="blue" style={{ fontSize: '14px', padding: '2px 6px' }}>
+          <BookOutlined style={{ marginRight: '6px' }} />
+          {genre?.name || 'Chưa phân loại'}
+        </Tag>
+      )
     },
     {
       title: "Tác giả",
@@ -335,11 +352,27 @@ const AdminProduct = () => {
     },
     {
       title: "Nhà xuất bản",
-      dataIndex: "publisher"
+      dataIndex: "publisher",
     },
     {
       title: "Số lượng",
-      dataIndex: "countInStock"
+      dataIndex: "countInStock",
+      render: (count) => (
+        <div style={{ 
+          backgroundColor: count > 0 ? "#f6ffed" : "#fff2f0", 
+          color: count > 0 ? "#52c41a" : "#f5222d",
+          fontWeight: "bold",
+          display: "inline-block",
+          padding: "2px 8px",
+          borderRadius: "10px",
+          fontSize: "14px",
+          border: count > 0 ? "1px solid #b7eb8f" : "1px solid #ffccc7",
+          minWidth: "60px",
+          textAlign: "center"
+        }}>
+          {count || 0}
+        </div>
+      )
     },
     {
       title: "Thao tác",
@@ -383,55 +416,25 @@ const AdminProduct = () => {
         >
           <PlusOutlined style={{ fontSize: "40px" }} />
         </Button>
-        <Row gutter={40} style={{ width: "40vw" }}>
-          <Col span={10}>
-            <Card style={{ border: "1px solid #00B55F" }}>
-              <Statistic
-                title="Số sản phẩm"
-                value={pagination.total}
-                formatter={(value) => (
-                  <CountUp
-                    end={value}
-                    separator="."
-                    style={{ color: "green", fontWeight: "bold" }}
-                  />
-                )}
-              />
-            </Card>
-          </Col>
-          <Col span={10}>
-            <Card style={{ border: "1px solid red" }}>
-              <Statistic
-                title="Số thể loại"
-                value={genres?.data?.length}
-                formatter={(value) => (
-                  <CountUp
-                    end={value}
-                    separator="."
-                    style={{ color: "green", fontWeight: "bold" }}
-                  />
-                )}
-              />
-            </Card>
-          </Col>
-        </Row>
-      </div>
 
-      {/* Nút lọc và bảng dữ liệu */}
-      <div style={{ marginTop: 20, marginBottom: 20 }}>
         <Button 
           type="primary" 
           icon={<SearchOutlined />}
           onClick={() => setIsFilterModalVisible(true)}
-          style={{ marginBottom: 20 }}
+          style={{ height: "50px", fontSize: "16px", padding: "0 25px" }}
+          size="large"
         >
           Lọc sản phẩm
         </Button>
+      </div>
 
+      {/* Bảng dữ liệu */}
+      <div style={{ marginTop: 20, marginBottom: 20 }}>
         <TableComponent
           columns={columns}
           dataSource={queryProduct.data?.data}
           loading={queryProduct.isLoading}
+          bordered
           pagination={{
             ...pagination,
             pageSizeOptions: [10, 20, 50, 100],
@@ -623,6 +626,7 @@ const AdminProduct = () => {
                 beforeUpload={() => false}
                 showUploadList={{ showError: false }}
                 onError={() => {}}
+                accept="image/*"
               >
                 <div>
                   <PlusOutlined />
@@ -778,6 +782,7 @@ const AdminProduct = () => {
                 beforeUpload={() => false}
                 showUploadList={{ showError: false }}
                 onError={() => {}}
+                accept="image/*"
               >
                 <div>
                   <PlusOutlined />

@@ -128,3 +128,13 @@ export const changePassword = async (id, token, currentPassword, newPassword) =>
   );
   return res.data;
 };
+
+export const getUsersPaginated = async (params, accessToken) => {
+  const res = await axiosJWT.get(`${apiUrl}/user/paginated`, {
+    params,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  return res.data;
+};

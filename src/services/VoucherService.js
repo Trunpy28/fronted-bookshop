@@ -9,10 +9,24 @@ export const getActiveVouchers = async () => {
 };
 
 export const createVoucher = async (data, token) => {
-  const response = await axiosJWT.post(`${API_URL}/create`, data, {
+  const formData = new FormData();
+  
+  // Thêm dữ liệu voucher vào FormData
+  for (const key in data) {
+    if (key !== 'image') {
+      formData.append(key, data[key]);
+    }
+  }
+  
+  // Thêm file ảnh nếu có
+  if (data.image && data.image instanceof File) {
+    formData.append('image', data.image);
+  }
+
+  const response = await axiosJWT.post(`${API_URL}/create`, formData, {
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+      "Content-Type": "multipart/form-data",
     },
   });
   return response.data;
@@ -38,10 +52,24 @@ export const getVoucherByCode = async (code) => {
 };
 
 export const updateVoucher = async (id, data, token) => {
-  const response = await axiosJWT.put(`${API_URL}/update/${id}`, data, {
+  const formData = new FormData();
+  
+  // Thêm dữ liệu voucher vào FormData
+  for (const key in data) {
+    if (key !== 'image') {
+      formData.append(key, data[key]);
+    }
+  }
+  
+  // Thêm file ảnh nếu có và là đối tượng File
+  if (data.image && data.image instanceof File) {
+    formData.append('image', data.image);
+  }
+
+  const response = await axiosJWT.put(`${API_URL}/update/${id}`, formData, {
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+      "Content-Type": "multipart/form-data",
     },
   });
   return response.data;

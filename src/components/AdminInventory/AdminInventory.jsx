@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Button, Card, Col, Form, Input, Row, Space, Statistic, Modal, InputNumber, DatePicker, Select, Table, Tooltip } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, ShoppingCartOutlined, ProductOutlined, FilterOutlined } from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined, ShoppingCartOutlined, ProductOutlined, FilterOutlined, CalendarOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as BatchService from "../../services/BatchService";
 import * as ProductService from "../../services/ProductService";
 import Loading from "../LoadingComponent/Loading";
-import * as message from "../../components/Message/Message";
+import * as message from "../Message/Message";
 import { useSelector } from "react-redux";
 import { WrapperHeader } from "../AdminProduct/style";
 import TableComponent from "../TableComponent/TableComponent";
 import dayjs from 'dayjs';
 import locale from 'antd/es/date-picker/locale/vi_VN';
-import { convertPrice } from "../../utils";
+import { convertPrice } from "../../utils/utils";
 const { RangePicker } = DatePicker;
 
 const AdminInventory = () => {
@@ -323,23 +323,62 @@ const AdminInventory = () => {
     {
       title: "Nhà cung cấp",
       dataIndex: "supplierName",
+      render: (text) => (
+        <div style={{ fontWeight: "bold", color: "#1677ff", fontSize: "16px" }}>{text}</div>
+      )
     },
     {
       title: "ID",
       dataIndex: "_id",
+      render: (text) => (
+        <span style={{ fontSize: '16px', backgroundColor: '#f5f5f5', padding: '2px 6px', borderRadius: '4px' }}>{text}</span>
+      )
     },
     {
       title: "Thời gian nhập lô",
       dataIndex: "dateReceived",
-      render: (text) => text ? dayjs(text).format('DD/MM/YYYY HH:mm') : 'Chưa có',
+      render: (text) => (
+        <span style={{ color: "black", fontSize: "16px" }}>
+          <CalendarOutlined style={{ marginRight: '6px', color: '#1890ff' }} />
+          {text ? dayjs(text).format('DD/MM/YYYY HH:mm') : 'Chưa có'}
+        </span>
+      )
     },
     {
       title: "Chiết khấu (%)",
       dataIndex: "discountPercentage",
+      render: (text) => (
+        <div style={{ 
+          backgroundColor: "#f6ffed", 
+          color: "#52c41a",
+          fontWeight: "bold",
+          display: "inline-block",
+          padding: "2px 8px",
+          borderRadius: "10px",
+          fontSize: "16px",
+          border: "1px solid #b7eb8f",
+          minWidth: "40px",
+          textAlign: "center"
+        }}>
+          {text}%
+        </div>
+      )
     },
     {
       title: "Ghi chú",
       dataIndex: "notes",
+      render: (text) => (
+        <div style={{ 
+          maxHeight: '40px', 
+          overflow: 'hidden', 
+          textOverflow: 'ellipsis', 
+          display: '-webkit-box', 
+          WebkitLineClamp: 2, 
+          WebkitBoxOrient: 'vertical',
+        }}>
+          {text || 'Không có ghi chú'}
+        </div>
+      )
     },
     {
       title: "Thao tác",
@@ -404,29 +443,24 @@ const AdminInventory = () => {
           >
             <PlusOutlined style={{ fontSize: "40px" }} />
           </Button>
-          <Row gutter={40} style={{ width: "40vw" }}>
-            <Col span={12}>
-              <Card style={{ border: "1px solid #00B55F" }}>
-                <Statistic title="Số lô hàng" value={queryBatches.data?.total || 0} />
-              </Card>
-            </Col>
-          </Row>
-        </div>
-        
-        <div style={{ marginTop: 20, marginBottom: 20 }}>
+          
           <Button 
             type="primary" 
             icon={<FilterOutlined />}
             onClick={() => setIsFilterModalOpen(true)}
-            style={{ marginBottom: 20 }}
+            style={{ height: "50px", fontSize: "16px", padding: "0 25px" }}
+            size="large"
           >
             Lọc lô hàng
           </Button>
-
+        </div>
+        
+        <div style={{ marginTop: 20, marginBottom: 20 }}>
           <TableComponent
             columns={columns}
             dataSource={queryBatches.data?.batches}
             loading={queryBatches.isLoading}
+            bordered
             pagination={{
               current: currentPage,
               pageSize: pageSize,

@@ -17,7 +17,7 @@ import {
   PaymentInfo
 } from "./style";
 import { useNavigate } from "react-router-dom";
-import { convertPrice, timeTranform } from "../../utils";
+import { convertPrice, timeTranform } from "../../utils/utils";
 import { 
   getStatusIcon, 
   getStatusText, 
@@ -25,6 +25,7 @@ import {
   getPaymentStatusIcon, 
   getPaymentStatusText 
 } from "../../utils/orderUtils";
+import { Tag } from "antd";
 
 const OrderDetailsComponent = ({ order }) => {
   const navigate = useNavigate();
@@ -46,6 +47,9 @@ const OrderDetailsComponent = ({ order }) => {
           <div style={{ fontSize: '16px', lineHeight: '1.8' }}>
             <p><strong>Mã đơn hàng:</strong> #{order?._id}</p>
             <p><strong>Thời gian đặt hàng:</strong> {timeTranform(order?.createdAt)}</p>
+            {order?.voucherCode && (
+              <p><strong>Mã voucher:</strong> <Tag color="green">{order?.voucherCode}</Tag></p>
+            )}
             {order?.deliveryAt && (
               <p><strong>Thời gian bắt đầu giao hàng:</strong> {timeTranform(order?.deliveryAt)}</p>
             )}

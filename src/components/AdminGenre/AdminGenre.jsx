@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Button, Card, Col, Form, Input, Row, Space, Statistic, Table, Modal, Tooltip } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
+import { Button, Card, Col, Form, Input, Row, Space, Statistic, Table, Modal, Tooltip, Tag } from "antd";
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, BookOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as GenreService from "../../services/GenreService";
 import Loading from "../LoadingComponent/Loading";
-import * as message from "../../components/Message/Message";
+import * as message from "../Message/Message";
 import { useSelector } from "react-redux";
 import { WrapperHeader } from "../AdminProduct/style";
 import TableComponent from "../TableComponent/TableComponent";
@@ -151,6 +151,12 @@ const AdminGenre = () => {
         record.name
           ? record.name.toString().toLowerCase().includes(value.toLowerCase())
           : '',
+      render: (text) => (
+        <Tag color="blue" style={{ fontSize: '14px', padding: '4px 8px' }}>
+          <BookOutlined style={{ marginRight: '6px' }} />
+          {text}
+        </Tag>
+      ),
     },
     {
       title: "Mô tả",
@@ -196,10 +202,37 @@ const AdminGenre = () => {
         >
           <PlusOutlined style={{ fontSize: "40px" }} />
         </Button>
-        <Row gutter={40} style={{ width: "40vw" }}>
-          <Col span={10}>
-            <Card style={{ border: "1px solid #00B55F" }}>
-              <Statistic title="Số thể loại" value={genres?.data?.length} />
+        <Row gutter={40} style={{ width: "30vw" }}>
+          <Col span={14}>
+            <Card 
+              style={{ 
+                border: "1px solid #1677ff", 
+                padding: "12px", 
+                borderRadius: "6px",
+                boxShadow: "0 2px 6px rgba(22, 119, 255, 0.1)"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ 
+                  backgroundColor: "#e6f4ff", 
+                  width: "50px", 
+                  height: "50px", 
+                  borderRadius: "50%", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center",
+                  marginRight: "12px",
+                  border: "1px solid #91caff"
+                }}>
+                  <BookOutlined style={{ fontSize: "24px", color: "#1677ff" }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: "16px", color: "#8c8c8c", marginBottom: "4px" }}>Số thể loại</div>
+                  <div style={{ fontSize: "26px", fontWeight: "bold", color: "#1677ff", lineHeight: "1" }}>
+                    {genres?.data?.length}
+                  </div>
+                </div>
+              </div>
             </Card>
           </Col>
         </Row>
@@ -210,6 +243,7 @@ const AdminGenre = () => {
           columns={columns}
           data={dataTable}
           isLoading={isLoadingGenres}
+          bordered
           pagination={{
             ...pagination,
             pageSizeOptions: [10, 20, 50, 100],

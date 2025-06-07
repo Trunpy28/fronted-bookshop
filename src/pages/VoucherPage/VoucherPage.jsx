@@ -2,10 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { ConfigProvider, Row, Col, Typography, Badge, message, Button, Empty, Modal, Tabs } from 'antd';
 import { CopyOutlined, ClockCircleOutlined, PercentageOutlined, DollarOutlined, CheckOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
-import moment from 'moment';
+import dayjs from 'dayjs';
 import * as VoucherService from '../../services/VoucherService';
 import { WrapperVoucherContainer, VoucherCard, VoucherHeader, VoucherContent, VoucherFooter, VoucherDetailModal } from './style';
-import { convertPrice } from '../../utils';
+import { convertPrice } from '../../utils/utils';
 import Loading from '../../components/LoadingComponent/Loading';
 
 const { Title, Text, Paragraph } = Typography;
@@ -108,7 +108,7 @@ const VoucherPage = () => {
   };
 
   const formatDate = (dateString) => {
-    return moment(dateString).format('DD/MM/YYYY HH:mm');
+    return dayjs(dateString).format('DD/MM/YYYY HH:mm');
   };
 
   const renderVoucherCard = (voucher) => {

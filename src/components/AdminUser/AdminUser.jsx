@@ -1,27 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { WrapperHeader } from "./style";
-import {
-  Button,
-  Card,
-  Col,
-  Form,
-  Input,
-  Row,
-  Select,
-  Space,
-  Statistic,
-  Tooltip,
-} from "antd";
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
+import { Button, Form, Input, Select, Tooltip, Tag, Avatar, Divider, Modal, Space, Row, Col } from "antd";
+import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined, MailOutlined, PhoneOutlined, CrownOutlined, SearchOutlined } from "@ant-design/icons";
 import TableComponent from "../TableComponent/TableComponent";
 import InputComponent from "../InputComponent/InputComponent";
 import { WrapperUploadFile } from "../../pages/ProfilePage/style";
-import { getBase64 } from "../../utils";
+import { getBase64 } from "../../utils/utils";
 import * as UserService from "../../services/UserService";
 import Loading from "../LoadingComponent/Loading";
 import * as message from "../../components/Message/Message";
@@ -29,7 +13,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import DrawerComponent from "../DrawerComponent/DrawerComponent";
 import { useSelector } from "react-redux";
 import ModalComponent from "../ModalComponent/ModalComponent";
-import CountUp from "react-countup";
 
 const AdminUser = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,52 +22,27 @@ const AdminUser = () => {
   const [isModalOpenDelete, setIsModalOpenDelete] = useState(false);
   const user = useSelector((state) => state?.user);
 
-  const [searchText, setSearchText] = useState("");
-  const [searchedColumn, setSearchedColumn] = useState("");
-  const searchInput = useRef(null);
-
-  const customnerFormatter = (value) => (
-    <CountUp
-      end={value}
-      separator="."
-      style={{ color: "green", fontWeight: "bold" }}
-    />
-  );
-
-  const adminFormatter = (value) => (
-    <CountUp
-      end={value}
-      separator="."
-      style={{ color: "blue", fontWeight: "bold" }}
-    />
-  );
+  // State cho phân trang và lọc
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  
+  // State lưu các bộ lọc
+  const [filters, setFilters] = useState({ name: '', email: '', phone: '', role: undefined });
+  
+  // Modal lọc người dùng
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [searchForm] = Form.useForm();
 
   // Chỉ chứa các thông tin cơ bản khi tạo user mới, không bao gồm địa chỉ
-  const [stateUser, setStateUser] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    isAdmin: false,
-    phone: "",
-    avatar: "",
-  });
+  const [stateUser, setStateUser] = useState({ name: "", email: "", password: "", confirmPassword: "", isAdmin: false, phone: "", avatar: "" });
 
   // Vẫn giữ nguyên thông tin địa chỉ để hiển thị chi tiết
-  const [stateUserDetails, setStateUserDetails] = useState({
-    name: "",
-    email: "",
-    isAdmin: false,
-    phone: "",
-    address: "",  // Giữ nguyên thông tin địa chỉ
-    avatar: "",
-  });
+  const [stateUserDetails, setStateUserDetails] = useState({ name: "", email: "", isAdmin: false, phone: "", address: "", avatar: "", id: "" });
 
   const [form] = Form.useForm();
   const [formDetails] = Form.useForm();
 
   // Sử dụng useMutation trực tiếp
-  const { mutate: mutationCreateUser, isPending, isSuccess, isError, data } = useMutation({
+  const { mutate: mutationCreateUser, isPending } = useMutation({
     mutationFn: (data) => {
       const {
         name,
@@ -106,44 +64,83 @@ const AdminUser = () => {
         avatar,
       });
     },
+    onSuccess: (data) => {
+      if (data?.status === "OK") {
+        message.success("Thêm tài khoản thành công");
+        setIsModalOpen(false);
+        form.resetFields();
+        queryUser.refetch();
+      } else {
+        message.error("Thêm tài khoản thất bại. " + data?.message);
+      }
+    },
+    onError: (error) => {
+      message.error("Thêm tài khoản thất bại. " + error?.message);
+    }
   });
 
   const { 
     mutate: mutationUpdateUser, 
-    isPending: isLoadingUpdated, 
-    isSuccess: isSuccessUpdated, 
-    isError: isErrorUpdated,
-    data: dataUpdated 
+    isPending: isLoadingUpdated 
   } = useMutation({
     mutationFn: (data) => {
       const { id, token, ...rests } = data;
       return UserService.updateUser(id, token, { ...rests });
     },
+    onSuccess: (data) => {
+      if (data?.status === "OK") {
+        message.success("Cập nhật tài khoản thành công");
+        setIsOpenDrawer(false);
+        formDetails.resetFields();
+        queryUser.refetch();
+      } else {
+        message.error("Cập nhật tài khoản thất bại. " + data?.message);
+      }
+    },
+    onError: (error) => {
+      message.error("Cập nhật tài khoản thất bại. " + error?.message);
+    }
   });
 
   const { 
     mutate: mutationDeleteUser, 
-    isPending: isLoadingDeleted, 
-    isSuccess: isSuccessDeleted, 
-    isError: isErrorDeleted,
-    data: dataDeleted 
+    isPending: isLoadingDeleted 
   } = useMutation({
     mutationFn: (data) => {
       const { id, token } = data;
       return UserService.deleteUser(id, token);
     },
+    onSuccess: (data) => {
+      if (data?.status === "OK") {
+        message.success("Xóa tài khoản thành công");
+        setIsModalOpenDelete(false);
+        queryUser.refetch();
+      } else {
+        message.error("Xóa tài khoản thất bại. " + data?.message);
+      }
+    },
+    onError: (error) => {
+      message.error("Xóa tài khoản thất bại. " + error?.message);
+    }
   });
 
-  const getAllUsers = async () => {
-    const res = await UserService.getAllUser(user?.access_token);
-    return res;
-  };
+  const queryUser = useQuery({
+    queryKey: ["users", pagination.current, pagination.pageSize, filters],
+    queryFn: () => {
+      const params = { page: pagination.current, limit: pagination.pageSize, ...filters };
+      return UserService.getUsersPaginated(params, user?.access_token);
+    },
+    keepPreviousData: true,
+  });
+  
+  const { isPending: isLoadingUsers, data: users } = queryUser;
 
   const fetchGetDetailsUser = async (rowSelected) => {
     const res = await UserService.getDetailsUser(
       rowSelected,
       user?.access_token
     );
+    
     if (res?.data) {
       setStateUserDetails({
         name: res?.data?.name,
@@ -152,6 +149,7 @@ const AdminUser = () => {
         phone: res?.data?.phone,
         address: res?.data?.address,
         avatar: res?.data?.avatar,
+        id: res?.data?._id,
       });
     }
     setIsLoadingUpdate(false);
@@ -170,16 +168,56 @@ const AdminUser = () => {
       fetchGetDetailsUser(rowSelected);
     }
   }, [isOpenDrawer]);
+  
+  // Handler cho thay đổi trang
+  const handlePaginationChange = (pagination) => {
+    setPagination({ ...pagination, current: pagination.current, pageSize: pagination.pageSize });
+  };
+  
+  // Handler cho việc áp dụng bộ lọc
+  const handleApplyFilters = (values) => {
+    const cleanedFilters = {};
+    
+    // Chỉ thêm các trường không rỗng vào filters
+    if (values.name && values.name.trim() !== '') 
+      cleanedFilters.name = values.name.trim();
+    
+    if (values.email && values.email.trim() !== '') 
+      cleanedFilters.email = values.email.trim();
+    
+    if (values.phone && values.phone.trim() !== '') 
+      cleanedFilters.phone = values.phone.trim();
+    
+    if (values.role !== undefined) 
+      cleanedFilters.role = values.role;
+    
+    setFilters(cleanedFilters);
+    setPagination({ ...pagination, current: 1 });
+    setIsFilterModalVisible(false);
+  };
+  
+  // Handler reset bộ lọc
+  const handleResetFilters = () => {
+    searchForm.setFieldsValue({ name: '', email: '', phone: '', role: undefined });
+  };
+  
+  // Khi mở modal, set giá trị form từ filters hiện tại
+  useEffect(() => {
+    if (isFilterModalVisible) {
+      searchForm.setFieldsValue(filters);
+    }
+  }, [isFilterModalVisible]);
+
+  // Cập nhật tổng số bản ghi từ response
+  useEffect(() => {
+    if (users?.data?.pagination) {
+      setPagination({ ...pagination, total: users.data.pagination.total || 0 });
+    }
+  }, [users]);
 
   const handleDetailsUser = () => {
     setIsOpenDrawer(true);
   };
-
-  const queryUser = useQuery({
-    queryKey: ["users"],
-    queryFn: getAllUsers,
-  });
-  const { isPending: isLoadingUsers, data: users } = queryUser;
 
   const renderAction = () => {
     return (
@@ -200,136 +238,84 @@ const AdminUser = () => {
     );
   };
 
-  const handleSearch = (selectedKeys, confirm, dataIndex) => {
-    confirm();
-    setSearchText(selectedKeys[0]);
-    setSearchedColumn(dataIndex);
-  };
-  const handleReset = (clearFilters) => {
-    clearFilters();
-    setSearchText("");
-  };
-
-  const getColumnSearchProps = (dataIndex) => ({
-    filterDropdown: ({
-      setSelectedKeys,
-      selectedKeys,
-      confirm,
-      clearFilters,
-      close,
-    }) => (
-      <div
-        style={{
-          padding: 8,
-        }}
-        onKeyDown={(e) => e.stopPropagation()}
-      >
-        <Input
-          ref={searchInput}
-          placeholder={`Tìm ${dataIndex === 'name' ? 'tên' : 
-                        dataIndex === 'email' ? 'email' : 
-                        dataIndex === 'isAdmin' ? 'vai trò' : 'số điện thoại'}`}
-          value={selectedKeys[0]}
-          onChange={(e) =>
-            setSelectedKeys(e.target.value ? [e.target.value] : [])
-          }
-          onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
-          style={{
-            marginBottom: 8,
-            display: "block",
-            fontSize: "16px",
-          }}
-        />
-        <Space>
-          <Button
-            type="primary"
-            onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
-            icon={<SearchOutlined />}
-            size="small"
-            style={{
-              width: 90,
-              height: "30px",
-              fontSize: "16px",
-            }}
-          >
-            Tìm
-          </Button>
-          <Button
-            onClick={() => clearFilters && handleReset(clearFilters)}
-            size="small"
-            style={{
-              width: 90,
-              height: "30px",
-              fontSize: "16px",
-            }}
-          >
-            Đặt lại
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              close();
-            }}
-            style={{
-              height: "30px",
-              fontSize: "16px",
-            }}
-          >
-            Đóng
-          </Button>
-        </Space>
-      </div>
-    ),
-    filterIcon: (filtered) => (
-      <SearchOutlined
-        style={{
-          color: filtered ? "#1677ff" : undefined,
-        }}
-      />
-    ),
-    onFilter: (value, record) =>
-      record[dataIndex].toString().toLowerCase().includes(value.toLowerCase())
-  });
-
   const columns = [
     {
-      title: "Tên người dùng",
+      title: "Người dùng",
       dataIndex: "name",
-      render: (text) => <a>{text}</a>,
-      ...getColumnSearchProps("name"),
+      key: "name",
+      width: 250,
+      render: (text, record) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div>
+            <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{text}</div>
+            <div style={{ color: '#666' }}>
+              <MailOutlined style={{ marginRight: '5px' }} />
+              {record.email}
+            </div>
+          </div>
+        </div>
+      ),
     },
     {
-      title: "Email",
-      dataIndex: "email",
-      ...getColumnSearchProps("email"),
+      title: "Số điện thoại",
+      dataIndex: "phone",
+      key: "phone",
+      width: 180,
+      render: (phone) => (
+        <div>
+          <PhoneOutlined style={{ marginRight: '8px', color: '#1677ff' }} />
+          {phone || <span style={{ color: '#999', fontStyle: 'italic' }}>Chưa cập nhật</span>}
+        </div>
+      ),
     },
     {
       title: "Vai trò",
       dataIndex: "isAdmin",
-      ...getColumnSearchProps("isAdmin"),
-    },
-    {
-      title: "SĐT",
-      dataIndex: "phone",
-      ...getColumnSearchProps("phone"),
+      key: "isAdmin",
+      width: 150,
+      render: (isAdmin) => (
+        <Tag 
+          icon={isAdmin === "Quản trị viên" ? <CrownOutlined /> : <UserOutlined />}
+          color={isAdmin === "Quản trị viên" ? "gold" : "green"}
+          style={{ padding: '4px 8px', fontSize: '14px' }}
+        >
+          {isAdmin}
+        </Tag>
+      ),
     },
     {
       title: "Địa chỉ",
       dataIndex: "address",
-      render: (address) => getFullAddress(address),
+      key: "address",
+      render: (address) => (
+        <div style={{ maxWidth: '300px' }}>
+          <Tooltip title={getFullAddress(address)}>
+            <span style={{ 
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical'
+            }}>
+              {getFullAddress(address)}
+            </span>
+          </Tooltip>
+        </div>
+      ),
       width: 300,
     },
     {
       title: "Thao tác",
       dataIndex: "action",
       render: renderAction,
+      width: 120,
+      fixed: 'right'
     },
   ];
 
   const dataTable =
-    users?.data?.length &&
-    users?.data?.map((user) => {
+    users?.data?.data?.length &&
+    users?.data?.data?.map((user) => {
       return {
         ...user,
         key: user._id,
@@ -338,72 +324,21 @@ const AdminUser = () => {
     });
 
   useEffect(() => {
-    if (isSuccess && data?.status === "OK") {
-      message.success("Thêm tài khoản thành công");
-      handleCancelDelete();
-    } else if (isError || data?.status === "ERR") {
-      message.error("Thêm tài khoản thất bại. " + data?.message);
+    if (isModalOpen) {
+      setStateUser({ name: "", email: "", password: "", confirmPassword: "", isAdmin: false, phone: "", avatar: "" });
+      form.resetFields();
     }
-  }, [isSuccess, isError]);
-
-  useEffect(() => {
-    if (isSuccessDeleted && dataDeleted?.status === "OK") {
-      message.success("Xóa tài khoản thành công");
-      handleCancelDelete();
-    } else if (isErrorDeleted || dataDeleted?.status === "ERR") {
-      message.error("Xóa tài khoản thất bại. ");
-    }
-  }, [isSuccessDeleted, isErrorDeleted]);
-
-  useEffect(() => {
-    if (isSuccessUpdated && dataUpdated?.status === "OK") {
-      message.success("Cập nhật tài khoản thành công");
-      handleCloseDrawer();
-    } else if (isErrorUpdated || dataUpdated?.status === "ERR") {
-      message.error("Cập nhật tài khoản thất bại. ");
-    }
-  }, [isSuccessUpdated, isErrorUpdated]);
-
-  useEffect(() => {
-    setStateUser({
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      isAdmin: false,
-      phone: "",
-      avatar: "",
-    });
   }, [isModalOpen]);
 
   const handleCloseDrawer = () => {
     setIsOpenDrawer(false);
-    setStateUserDetails({
-      name: "",
-      email: "",
-      isAdmin: false,
-      phone: "",
-      address: "",
-      avatar: "",
-    });
-    formDetails.resetFields();
   };
 
   const showModal = () => {
     setIsModalOpen(true);
   };
 
-  const handleOk = () => {
-    setStateUser({
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      isAdmin: false,
-      phone: "",
-      avatar: "",
-    });
-    form.resetFields();
+  const handleCancel = () => {
     setIsModalOpen(false);
   };
 
@@ -412,88 +347,34 @@ const AdminUser = () => {
   };
 
   const handleDeleteUser = () => {
-    mutationDeleteUser(
-      { id: rowSelected, token: user?.access_token },
-      {
-        onSettled: () => {
-          queryUser.refetch();
-        },
-      }
-    );
-  };
-
-  const handleDeleteManyUsers = () => {
-    message.warning("Tính năng xóa nhiều tài khoản chưa được hỗ trợ");
-  };
-
-  const handleCancel = () => {
-    setStateUser({
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      isAdmin: false,
-      phone: "",
-      avatar: "",
-    });
-    form.resetFields();
-    setIsModalOpen(false);
+    mutationDeleteUser({ id: rowSelected, token: user?.access_token });
   };
 
   const onFinish = () => {
-    handleOk();
-    mutationCreateUser(stateUser, {
-      onSettled: () => {
-        queryUser.refetch();
-      },
-    });
+    mutationCreateUser(stateUser);
   };
 
-
   const handleOnChange = (e) => {
-    setStateUser({
-      ...stateUser,
-      [e.target.name]: e.target.value,
-    });
+    setStateUser({ ...stateUser, [e.target.name]: e.target.value });
   };
 
   const handleOnChangeRole = (value) => {
-    setStateUser({
-      ...stateUser,
-      isAdmin: value,
-    });
+    setStateUser({ ...stateUser, isAdmin: value });
   };
 
   const handleOnChangeDetailsRole = (value) => {
-    setStateUserDetails({
-      ...stateUserDetails,
-      isAdmin: value,
-    });
+    setStateUserDetails({ ...stateUserDetails, isAdmin: value });
   };
 
   const handleOnChangeAvatar = async ({ file }) => {
     if (!file.url && !file.preview) {
       file.preview = await getBase64(file.originFileObj);
     }
-    setStateUser({
-      ...stateUser,
-      avatar: file.preview,
-    });
+    setStateUser({ ...stateUser, avatar: file.preview });
   };
 
   const onUpdateUser = () => {
-    mutationUpdateUser(
-      {
-        id: rowSelected,
-        token: user?.access_token,
-        isAdmin: stateUserDetails.isAdmin
-      },
-      {
-        onSettled: () => {
-          queryUser.refetch();
-        },
-      }
-    );
+    mutationUpdateUser({ id: rowSelected, token: user?.access_token, isAdmin: stateUserDetails.isAdmin });
   };
 
   // Tạo chuỗi địa chỉ đầy đủ
@@ -509,17 +390,6 @@ const AdminUser = () => {
     return parts.length ? parts.join(', ') : "Chưa có địa chỉ";
   };
 
-  //Memo cho thống kê
-  const adminAccount = useMemo(() => {
-    return users?.data?.reduce((total, user) => {
-      return total + (user?.isAdmin ? 1 : 0);
-    }, 0);
-  }, [users]);
-
-  const customerAccount = useMemo(() => {
-    return users?.data?.length - adminAccount;
-  }, [users]);
-
   return (
     <div>
       <WrapperHeader>Quản lý tài khoản</WrapperHeader>
@@ -534,57 +404,121 @@ const AdminUser = () => {
       >
         <Button
           style={{
-            height: "150px",
-            width: "150px",
-            borderRadius: "6px",
-            borderStyle: "dashed",
+            height: '150px',
+            width: '150px',
+            borderRadius: '6px',
+            borderStyle: 'dashed',
           }}
           onClick={showModal}
         >
-          <PlusOutlined style={{ fontSize: "40px" }} />
+          <PlusOutlined style={{ fontSize: '40px' }} />
         </Button>
-        <Row gutter={40} style={{ width: "40vw" }}>
-          <Col span={10}>
-            <Card style={{ border: "1px solid #1677FF" }}>
-              <Statistic
-                title="Quản trị viên"
-                value={adminAccount}
-                formatter={adminFormatter}
-              />
-            </Card>
-          </Col>
-          <Col span={10}>
-            <Card style={{ border: "1px solid #00B55F" }}>
-              <Statistic
-                title="Khách hàng"
-                value={customerAccount}
-                formatter={customnerFormatter}
-              />
-            </Card>
-          </Col>
-        </Row>
+
+        <Button 
+          type="primary" 
+          icon={<SearchOutlined />}
+          onClick={() => setIsFilterModalVisible(true)}
+          style={{ height: "50px", fontSize: "16px", padding: "0 25px" }}
+          size="large"
+        >
+          Lọc tài khoản
+        </Button>
       </div>
 
-      <div style={{ marginTop: "20px" }}>
+      {/* Bảng dữ liệu */}
+      <div style={{ marginTop: 20, marginBottom: 20 }}>
         <TableComponent
-          handleDeleteMany={handleDeleteManyUsers}
           columns={columns}
           data={dataTable}
           isLoading={isLoadingUsers}
-          onRow={(record, rowIndex) => {
-            return {
-              onClick: (event) => {
-                setRowSelected(record._id);
-              },
-            };
+          pagination={{
+            ...pagination,
+            pageSizeOptions: [2, 10, 20, 50, 100],
+            showSizeChanger: true,
+            showTotal: (total) => `Tổng ${total} bản ghi`
           }}
+          onChange={handlePaginationChange}
+          onRow={(record) => ({ onClick: () => setRowSelected(record._id) })}
+          scroll={{ x: 1000 }}
+          bordered
         />
       </div>
+
+      {/* Modal lọc người dùng */}
+      <Modal
+        title="Lọc tài khoản"
+        open={isFilterModalVisible}
+        onCancel={() => setIsFilterModalVisible(false)}
+        footer={null}
+        width={800}
+      >
+        <Form
+          form={searchForm}
+          layout="vertical"
+          onFinish={handleApplyFilters}
+          initialValues={filters}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="name" label="Tên người dùng">
+                <Input placeholder="Nhập tên người dùng" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="email" label="Email">
+                <Input placeholder="Nhập email" />
+              </Form.Item>
+            </Col>
+          </Row>
+          
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="phone" label="Số điện thoại">
+                <Input placeholder="Nhập số điện thoại" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="role" label="Vai trò">
+                <Select
+                  allowClear
+                  placeholder="Chọn vai trò"
+                  options={[
+                    {
+                      value: 'admin',
+                      label: 'Quản trị viên',
+                    },
+                    {
+                      value: 'customer',
+                      label: 'Khách hàng',
+                    },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row>
+            <Col span={24} style={{ textAlign: 'right' }}>
+              <Space>
+                <Button 
+                  onClick={handleResetFilters}
+                >
+                  Đặt lại
+                </Button>
+                <Button type="primary" htmlType="submit">
+                  Áp dụng
+                </Button>
+              </Space>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
+
       <ModalComponent
         forceRender
         title="Tạo tài khoản"
         open={isModalOpen}
-        onOk={handleOk}
+        onOk={handleCancel}
         onCancel={handleCancel}
         cancelText="Hủy bỏ"
         width={700}
@@ -771,113 +705,106 @@ const AdminUser = () => {
       <DrawerComponent
         title="Chi tiết tài khoản"
         isOpen={isOpenDrawer}
-        onClose={() => {
-          setIsOpenDrawer(false);
-        }}
+        onClose={handleCloseDrawer}
         width="65%"
         forceRender
       >
         <Loading isLoading={isLoadingUpdate || isLoadingUpdated}>
-          <Form
-            name="Edit user form"
-            labelCol={{
-              span: 8,
-            }}
-            wrapperCol={{
-              span: 16,
-            }}
-            style={{
-              maxWidth: 600,
-            }}
-            initialValues={{
-              remember: true,
-            }}
-            onFinish={onUpdateUser}
-            autoComplete="off"
-            form={formDetails}
-          >
-            <Form.Item
-              label="Tên người dùng"
-            >
-              <span>{stateUserDetails?.name}</span>
-            </Form.Item>
-
-            <Form.Item
-              label="Email"
-            >
-              <span>{stateUserDetails?.email}</span>
-            </Form.Item>
-
-            <Form.Item
-              label="Số điện thoại"
-            >
-              <span>{stateUserDetails?.phone || "Chưa có thông tin"}</span>
-            </Form.Item>
-
-            <Form.Item
-              label="Địa chỉ"
-            >
-              <span>{getFullAddress(stateUserDetails?.address)}</span>
-            </Form.Item>
-
-            <Form.Item
-              label="Vai trò"
-              name="isAdmin"
-              rules={[
-                {
-                  required: true,
-                  message: "Hãy chọn vai trò của tài khoản!",
-                },
-              ]}
-            >
-              <Select
-                defaultValue={stateUserDetails?.isAdmin}
-                style={{
-                  width: 150,
-                }}
-                onChange={handleOnChangeDetailsRole}
-                options={[
-                  {
-                    value: true,
-                    label: "Quản trị viên",
-                  },
-                  {
-                    value: false,
-                    label: "Khách hàng",
-                  },
-                ]}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Ảnh đại diện"
-            >
-              {stateUserDetails?.avatar && (
-                <img
-                  src={stateUserDetails?.avatar}
-                  style={{
-                    height: "100px",
-                    width: "100px",
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                    objectPosition: "center",
-                  }}
-                  alt="Ảnh đại diện"
-                />
-              )}
-            </Form.Item>
-
-            <Form.Item
+          <div style={{ padding: '0 20px' }}>
+            {stateUserDetails?.avatar ? (
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <Avatar size={100} src={stateUserDetails?.avatar} />
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <Avatar size={100} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
+              </div>
+            )}
+            
+            <Divider orientation="left">Thông tin cá nhân</Divider>
+            
+            <Row gutter={16} style={{ marginBottom: '15px' }}>
+              <Col span={8} style={{ fontWeight: 'bold', color: '#666' }}>Tên người dùng:</Col>
+              <Col span={16}>{stateUserDetails?.name}</Col>
+            </Row>
+            
+            <Row gutter={16} style={{ marginBottom: '15px' }}>
+              <Col span={8} style={{ fontWeight: 'bold', color: '#666' }}>Email:</Col>
+              <Col span={16}>{stateUserDetails?.email}</Col>
+            </Row>
+            
+            <Row gutter={16} style={{ marginBottom: '15px' }}>
+              <Col span={8} style={{ fontWeight: 'bold', color: '#666' }}>Số điện thoại:</Col>
+              <Col span={16}>{stateUserDetails?.phone || "Chưa có thông tin"}</Col>
+            </Row>
+            
+            <Row gutter={16} style={{ marginBottom: '15px' }}>
+              <Col span={8} style={{ fontWeight: 'bold', color: '#666' }}>Địa chỉ:</Col>
+              <Col span={16}>{getFullAddress(stateUserDetails?.address)}</Col>
+            </Row>
+            
+            <Divider orientation="left">Cài đặt quyền</Divider>
+            
+            <Form
+              name="Edit user form"
+              labelCol={{
+                span: 8,
+              }}
               wrapperCol={{
-                offset: 19,
                 span: 16,
               }}
+              style={{
+                maxWidth: 600,
+              }}
+              initialValues={{
+                remember: true,
+              }}
+              onFinish={onUpdateUser}
+              autoComplete="off"
+              form={formDetails}
             >
-              <Button type="primary" htmlType="submit">
-                Cập nhật
-              </Button>
-            </Form.Item>
-          </Form>
+              <Form.Item
+                label="Vai trò"
+                name="isAdmin"
+                rules={[
+                  {
+                    required: true,
+                    message: "Hãy chọn vai trò của tài khoản!",
+                  },
+                ]}
+              >
+                <Select
+                  defaultValue={stateUserDetails?.isAdmin}
+                  style={{
+                    width: 150,
+                  }}
+                  onChange={handleOnChangeDetailsRole}
+                  options={[
+                    {
+                      value: true,
+                      label: "Quản trị viên",
+                    },
+                    {
+                      value: false,
+                      label: "Khách hàng",
+                    },
+                  ]}
+                  disabled={stateUserDetails?.id === user?.id}
+                />
+              </Form.Item>
+
+              <Form.Item
+                wrapperCol={{
+                  offset: 19,
+                  span: 16,
+                }}
+              >
+                <Button type="primary" htmlType="submit">
+                  Cập nhật
+                </Button>
+              </Form.Item>
+            </Form>
+          </div>
         </Loading>
       </DrawerComponent>
 

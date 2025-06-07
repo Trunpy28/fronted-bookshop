@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Modal, Typography, Tag, Image, Row, Col, Rate } from "antd";
-import { convertPrice } from "../../utils";
+import { convertPrice } from "../../utils/utils";
 import {
   WrapperContainer,
   WrapperItemOrder,
@@ -16,10 +16,8 @@ const { Title, Paragraph } = Typography;
 
 const ProductDetailModal = ({ product, visible, onClose, genres }) => {
   const [selectedImage, setSelectedImage] = useState(0);
-  
-  if (!product) return null;
 
-  const productGenre = genres?.data?.find(g => g._id === product.genre);
+  if (!product) return null;
 
   return (
     <Modal
@@ -135,7 +133,7 @@ const ProductDetailModal = ({ product, visible, onClose, genres }) => {
                       color="blue"
                       style={{ fontSize: "14px", padding: "2px 8px" }}
                     >
-                      {productGenre?.name || ''}
+                      {product.genre?.name || ''}
                     </Tag>
                   </div>
                   

@@ -2,7 +2,7 @@ import { Image } from 'antd';
 import React from 'react'
 import { WrapperSliderStyle } from './style';
 
-const SliderComponent = ({ arrImages }) => {
+const SliderComponent = ({ arrImages, onClick }) => {
     const settings = {
         dots: true,
         infinite: true,
@@ -16,7 +16,16 @@ const SliderComponent = ({ arrImages }) => {
         <WrapperSliderStyle {...settings}>
             {arrImages.map((image) => {
                 return (
-                  <Image key={image} src={image} alt="slider" preview={false} width='100%' height='30vw' />
+                  <div key={image} style={{ cursor: onClick ? 'pointer' : 'default' }}>
+                    <Image 
+                      src={image} 
+                      alt="slider" 
+                      preview={false} 
+                      width='100%' 
+                      height='30vw' 
+                      onClick={onClick}
+                    />
+                  </div>
                 )
             })}
         </WrapperSliderStyle>

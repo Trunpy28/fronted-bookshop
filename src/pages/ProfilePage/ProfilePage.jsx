@@ -17,7 +17,7 @@ import Loading from "../../components/LoadingComponent/Loading";
 import * as message from "../../components/Message/Message";
 import { updateUser } from "../../redux/slices/userSlice";
 import { UploadOutlined, UserOutlined } from "@ant-design/icons";
-import { getBase64 } from "../../utils";
+import { getBase64 } from "../../utils/utils";
 import addressVietNam from "../../constants/addressConstants";
 import { useNavigate, useLocation } from "react-router-dom";
 

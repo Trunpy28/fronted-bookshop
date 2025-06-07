@@ -10,16 +10,24 @@ import { WrapperProducts, WrapperGenreTitle, GenreSection, PageContainer } from 
 import { useQuery, useQueries } from "@tanstack/react-query";
 import * as ProductService from "../../services/ProductService";
 import * as GenreService from "../../services/GenreService";
+import * as VoucherService from "../../services/VoucherService";
 import Loading from "../../components/LoadingComponent/Loading";
-import { Button, ConfigProvider } from "antd";
+import { Button, ConfigProvider, Empty } from "antd";
 import { ArrowRightOutlined, AppstoreOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
 const HomePage = () => {
   const navigate = useNavigate();
+  
   const { data: genresData, isLoading: isLoadingGenres } = useQuery({
     queryKey: ["genres"],
     queryFn: GenreService.getAllGenres,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { data: vouchersData, isLoading: isLoadingVouchers } = useQuery({
+    queryKey: ["activeVouchers"],
+    queryFn: VoucherService.getActiveVouchers,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -41,13 +49,31 @@ const HomePage = () => {
     navigate('/products');
   };
 
+  const handleVoucherClick = () => {
+    navigate('/vouchers');
+  };
+
+  // Lọc ra các voucher có ảnh
+  const voucherImages = vouchersData?.data?.filter(voucher => voucher.image)?.map(voucher => voucher.image) || [];
+
   return (
     <PageContainer>
-      <div style={{ marginBottom: "30px", borderRadius: "12px", overflow: "hidden" }}>
-        <SliderComponent
-          arrImages={[slider1, slider2, slider3, slider4, slider5]}
-        />
-      </div>
+      <Loading isLoading={isLoadingVouchers}>
+        {voucherImages.length > 0 ? (
+          <div style={{ marginBottom: "30px", borderRadius: "12px", overflow: "hidden" }}>
+            <SliderComponent
+              arrImages={voucherImages}
+              onClick={handleVoucherClick}
+            />
+          </div>
+        ) : (
+          <div style={{ marginBottom: "30px", borderRadius: "12px", overflow: "hidden" }}>
+            <SliderComponent
+              arrImages={[slider1, slider2, slider3, slider4, slider5]}
+            />
+          </div>
+        )}
+      </Loading>
       
       {/* Nút "Xem tất cả sản phẩm" */}
       <div style={{ textAlign: "center", marginBottom: "30px" }}>

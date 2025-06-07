@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { 
   Row, 
   Col, 
@@ -12,7 +12,8 @@ import {
   Divider, 
   Empty,
   Input,
-  ConfigProvider
+  ConfigProvider,
+  Tag
 } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import * as ProductService from "../../services/ProductService";
@@ -28,12 +29,18 @@ import {
   TotalProductsText, 
   WrapperProducts 
 } from "./style";
+import { SearchOutlined } from "@ant-design/icons";
 
 const { Title } = Typography;
 const { Option } = Select;
 
 const ProductListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  // Lấy từ khóa tìm kiếm từ URL
+  const searchQuery = searchParams.get("q") || "";
+  const isElasticsearchSearch = !!searchQuery;
   
   // Lấy giá trị từ URL
   const [filters, setFilters] = useState({
@@ -51,12 +58,6 @@ const ProductListPage = () => {
     }
   });
 
-  // State cho input giá
-  const [priceInputs, setPriceInputs] = useState({
-    min: searchParams.get("priceMin") || "",
-    max: searchParams.get("priceMax") || ""
-  });
-
   // Fetch thể loại sách
   const { data: genresData, isLoading: isLoadingGenres } = useQuery({
     queryKey: ["genres"],
@@ -70,35 +71,83 @@ const ProductListPage = () => {
     isLoading: isLoadingProducts,
     refetch 
   } = useQuery({
-    queryKey: ["products", filters],
-    queryFn: () => ProductService.getProductsPaginated({
-      page: filters.page,
-      limit: filters.limit,
-      name: filters.name || undefined,
-      genres: filters.genres.length > 0 ? filters.genres : undefined,
-      price: (filters.price.min !== null || filters.price.max !== null) ? filters.price : undefined,
-      sort: filters.sort.sortBy ? { sortBy: filters.sort.sortBy, order: filters.sort.order } : undefined
-    }),
+    queryKey: ["products", isElasticsearchSearch ? searchQuery : filters, isElasticsearchSearch ? filters.sort : null],
+    queryFn: () => {
+      if (isElasticsearchSearch) {
+        // Chuyển đổi cấu trúc sort từ {sortBy, order} sang chuỗi cho Elasticsearch
+        let sortParam = "relevance"; // Mặc định là sắp xếp theo độ liên quan
+        if (filters.sort.sortBy) {
+          sortParam = `${filters.sort.sortBy}-${filters.sort.order}`;
+        }
+        
+        // Sử dụng API tìm kiếm Elasticsearch
+        return ProductService.searchProducts({
+          q: searchQuery,
+          page: filters.page,
+          limit: filters.limit,
+          sort: sortParam
+        });
+      } else {
+        // Sử dụng API thông thường
+        return ProductService.getProductsPaginated({
+          page: filters.page,
+          limit: filters.limit,
+          name: filters.name || undefined,
+          genres: filters.genres.length > 0 ? filters.genres : undefined,
+          price: (filters.price.min !== null || filters.price.max !== null) ? filters.price : undefined,
+          sort: filters.sort.sortBy ? { sortBy: filters.sort.sortBy, order: filters.sort.order } : undefined
+        });
+      }
+    },
     staleTime: 1000 * 60 * 3,
   });
 
   // Cập nhật URL khi filters thay đổi
   useEffect(() => {
-    const newSearchParams = {};
+    // Tạo params mới cho URL
+    const newSearchParams = new URLSearchParams();
     
-    if (filters.page !== 1) newSearchParams.page = filters.page.toString();
-    if (filters.limit !== 12) newSearchParams.limit = filters.limit.toString();
-    if (filters.name) newSearchParams.name = filters.name;
-    if (filters.genres.length > 0) newSearchParams.genres = filters.genres.join(",");
-    if (filters.price.min !== null) newSearchParams.priceMin = filters.price.min.toString();
-    if (filters.price.max !== null) newSearchParams.priceMax = filters.price.max.toString();
+    // Luôn giữ tham số q nếu đang tìm kiếm Elasticsearch
+    if (isElasticsearchSearch) {
+      newSearchParams.set("q", searchQuery);
+    }
+    
+    // Các tham số chung cho cả hai loại tìm kiếm
+    if (filters.page !== 1) {
+      newSearchParams.set("page", filters.page.toString());
+    }
+    
+    if (filters.limit !== 12) {
+      newSearchParams.set("limit", filters.limit.toString());
+    }
+    
+    // Chỉ thêm các tham số bộ lọc cho tìm kiếm thông thường
+    if (!isElasticsearchSearch) {
+      if (filters.name) {
+        newSearchParams.set("name", filters.name);
+      }
+      
+      if (filters.genres.length > 0) {
+        newSearchParams.set("genres", filters.genres.join(","));
+      }
+      
+      if (filters.price.min !== null) {
+        newSearchParams.set("priceMin", filters.price.min.toString());
+      }
+      
+      if (filters.price.max !== null) {
+        newSearchParams.set("priceMax", filters.price.max.toString());
+      }
+    }
+    
+    // Cấu hình sắp xếp cho cả hai loại tìm kiếm
     if (filters.sort.sortBy) {
-      newSearchParams.sortBy = filters.sort.sortBy;
-      newSearchParams.order = filters.sort.order;
+      newSearchParams.set("sortBy", filters.sort.sortBy);
+      newSearchParams.set("order", filters.sort.order);
     }
     
     setSearchParams(newSearchParams);
-  }, [filters, setSearchParams]);
+  }, [filters, searchQuery, isElasticsearchSearch, setSearchParams]);
 
   // Xử lý thay đổi trang
   const handlePageChange = (page) => {
@@ -112,6 +161,11 @@ const ProductListPage = () => {
 
   // Xử lý thay đổi bộ lọc thể loại
   const handleGenreChange = (genreId, checked) => {
+    if (isElasticsearchSearch) {
+      // Chuyển về tìm kiếm thông thường nếu đang dùng Elasticsearch
+      clearElasticsearchSearch();
+    }
+    
     setFilters(prev => {
       const newGenres = checked 
         ? [...prev.genres, genreId]
@@ -149,6 +203,11 @@ const ProductListPage = () => {
 
   // Xử lý áp dụng bộ lọc giá
   const handleApplyPriceFilter = () => {
+    if (isElasticsearchSearch) {
+      // Chuyển về tìm kiếm thông thường nếu đang dùng Elasticsearch
+      clearElasticsearchSearch();
+    }
+    
     setFilters(prev => ({
       ...prev,
       page: 1,
@@ -191,8 +250,22 @@ const ProductListPage = () => {
       max: ""
     });
   };
+  
+  // Xóa tìm kiếm Elasticsearch và chuyển về tìm kiếm thông thường
+  const clearElasticsearchSearch = () => {
+    const newSearchParams = new URLSearchParams();
+    
+    // Giữ lại các tham số hiện tại trừ q
+    for (const [key, value] of searchParams.entries()) {
+      if (key !== 'q') {
+        newSearchParams.append(key, value);
+      }
+    }
+    
+    setSearchParams(newSearchParams);
+  };
 
-  const products = productsData?.data || [];
+  const products = productsData?.data || productsData?.products || [];
   const pagination = productsData?.pagination || { total: 0, page: 1, limit: 12, totalPages: 0 };
 
   // Giá trị cho dropdown sắp xếp
@@ -206,6 +279,18 @@ const ProductListPage = () => {
     { label: 'Đánh giá (Cao nhất)', value: 'rating-desc' },
     { label: 'Đánh giá (Thấp nhất)', value: 'rating-asc' }
   ];
+  
+  // Thêm option "Độ liên quan" cho tìm kiếm Elasticsearch
+  const elasticSortOptions = [
+    { label: 'Độ liên quan', value: '' }, // Để trống để reset về default
+    ...sortOptions
+  ];
+  
+  // State cho input giá
+  const [priceInputs, setPriceInputs] = useState({
+    min: searchParams.get("priceMin") || "",
+    max: searchParams.get("priceMax") || ""
+  });
 
   return (
     <ConfigProvider
@@ -230,10 +315,25 @@ const ProductListPage = () => {
       }}
     >
       <PageContainer>
-        <Title level={2}>Danh sách sản phẩm</Title>
+        <Title level={2}>
+          {isElasticsearchSearch 
+            ? `Kết quả tìm kiếm cho "${searchQuery}"` 
+            : "Danh sách sản phẩm"}
+        </Title>
+        
+        {isElasticsearchSearch && (
+          <Tag 
+            color="blue" 
+            closable 
+            onClose={clearElasticsearchSearch}
+            style={{ marginBottom: 16 }}
+          >
+            <SearchOutlined /> {searchQuery}
+          </Tag>
+        )}
         
         <Row gutter={24}>
-          {/* Phần bộ lọc bên trái */}
+          {/* Phần bộ lọc bên trái - luôn hiển thị */}
           <Col xs={24} sm={24} md={8} lg={6}>
             <FilterContainer>
               <Title level={4} style={{ fontSize: 18, marginBottom: 16 }}>Bộ lọc</Title>
@@ -301,7 +401,7 @@ const ProductListPage = () => {
           </Col>
           
           {/* Phần danh sách sản phẩm bên phải */}
-          <Col xs={24} sm={24} md={18} lg={18}>
+          <Col xs={24} sm={24} md={16} lg={18}>
             <ProductsSection>
               <SortContainer>
                 <Select
@@ -311,7 +411,7 @@ const ProductListPage = () => {
                   value={filters.sort.sortBy ? `${filters.sort.sortBy}-${filters.sort.order}` : undefined}
                   onChange={handleSortChange}
                 >
-                  {sortOptions.map(option => (
+                  {(isElasticsearchSearch ? elasticSortOptions : sortOptions).map(option => (
                     <Option key={option.value} value={option.value}>{option.label}</Option>
                   ))}
                 </Select>
@@ -336,13 +436,13 @@ const ProductListPage = () => {
                   <WrapperProducts>
                     {products.map((product) => (
                       <CardComponent
-                        key={product._id}
-                        images={product.images}
+                        key={product._id || product.id}
+                        images={product.images || []}
                         name={product.name}
-                        originalPrice={product.originalPrice}
+                        originalPrice={product.originalPrice || product.price}
                         rating={product.rating}
                         selled={product.selled}
-                        _id={product._id}
+                        _id={product._id || product.id}
                       />
                     ))}
                   </WrapperProducts>

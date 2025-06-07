@@ -27,9 +27,10 @@ import Loading from "../LoadingComponent/Loading";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { setCart } from "../../redux/slices/cartSlice";
-import { convertPrice } from "../../utils";
+import { convertPrice } from "../../utils/utils";
 import dayjs from 'dayjs';
 import DOMPurify from 'dompurify';
+import CardComponent from "../CardComponent/CardComponent";
 
 const { TextArea } = Input;
 
@@ -61,6 +62,13 @@ const ProductDetailsComponent = ({ productId }) => {
   const { data: reviewsData, refetch: refetchReviews } = useQuery({
     queryKey: ["product-reviews", productId],
     queryFn: () => ReviewService.getReviewsByProductId(productId),
+    enabled: !!productId,
+  });
+
+  // Fetch similar products
+  const { data: similarProducts, isLoading: isLoadingSimilar } = useQuery({
+    queryKey: ["similar-products", productId],
+    queryFn: () => ProductService.getSimilarProducts(productId, 20),
     enabled: !!productId,
   });
 
@@ -407,6 +415,30 @@ const ProductDetailsComponent = ({ productId }) => {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Phần sản phẩm tương tự */}
+          <div className="mt-12 pt-8 border-t border-gray-200">
+            <h2 className="text-3xl font-bold mb-6">Sản phẩm tương tự</h2>
+            <Loading isLoading={isLoadingSimilar}>
+              {similarProducts?.products?.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {similarProducts.products.map((product) => (
+                    <CardComponent
+                      key={product.id}
+                      images={product.images || []}
+                      name={product.name}
+                      originalPrice={product.price}
+                      rating={product.rating ? {avgRating: product.rating} : undefined}
+                      selled={product.selled}
+                      _id={product.id}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">Không tìm thấy sản phẩm tương tự</p>
+              )}
+            </Loading>
           </div>
         </div>
       </Loading>

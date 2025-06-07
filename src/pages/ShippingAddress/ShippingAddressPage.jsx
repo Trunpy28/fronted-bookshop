@@ -53,7 +53,7 @@ const ShippingAddressPage = () => {
   const [addressType, setAddressType] = useState("home");
   
   // Lấy thông tin prev path từ location state hoặc sử dụng giá trị mặc định
-  const prevPath = location.state?.prevPath || '/profile-user';
+  const prevPath = location.state?.prevPath;
   
   // Xử lý navigation quay lại trang trước đó
   const handleGoBack = () => {

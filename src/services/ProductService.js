@@ -83,12 +83,31 @@ export const getProductsPaginated = async (options, access_token) => {
     return response.data;
 };
 
-export const getAllProductsName = async () => {
-    const response = await axios.get(`${productApiUrl}/product-names`);
-    return response.data;
-};
-
 export const getAllProductsForSelect = async () => {
     const response = await axios.get(`${productApiUrl}/products-for-select`);
     return response.data;
+};
+
+//Tìm kiếm sản phẩm sử dụng Elasticsearch
+export const searchProducts = async (params) => {
+  try {
+    const response = await axios.get(`${productApiUrl}/search`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error searching products:', error);
+    throw error;
+  }
+};
+
+//Lấy các sản phẩm tương tự dựa trên tiêu chí ngữ nghĩa
+export const getSimilarProducts = async (productId, limit = 10) => {
+  try {
+    const response = await axios.get(`${productApiUrl}/similar/${productId}`, {
+      params: { limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error getting similar products:', error);
+    throw error;
+  }
 }; 

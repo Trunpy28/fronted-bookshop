@@ -17,7 +17,7 @@ import ButtonComponent from "../../components/ButtonComponent/ButtonComponent";
 import { useDispatch, useSelector } from "react-redux";
 import { resetCart } from "../../redux/slices/cartSlice";
 import { useLocation, useNavigate } from "react-router-dom";
-import { convertPrice } from "../../utils";
+import { convertPrice } from "../../utils/utils";
 import * as OrderService from "../../services/OrderService";
 import Loading from "../../components/LoadingComponent/Loading";
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";

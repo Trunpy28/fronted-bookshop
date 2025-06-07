@@ -8,7 +8,7 @@ import {
   StyledCard
 } from "./style";
 import { useNavigate } from "react-router-dom";
-import { convertPrice } from "../../utils";
+import { convertPrice } from "../../utils/utils";
 
 const CardComponent = (props) => {
   const { images, name, originalPrice, rating, selled, _id } = props;
