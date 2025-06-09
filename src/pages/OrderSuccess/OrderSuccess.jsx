@@ -21,6 +21,7 @@ const OrderSuccess = () => {
   const { data: orderData, isPending } = useQuery({
     queryKey: ["order-success", orderId],
     queryFn: () => OrderService.getDetailsOrder(orderId, user?.access_token),
+    enabled: !!orderId && !!user?.access_token,
   });
 
   return (

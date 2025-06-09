@@ -42,42 +42,42 @@ const SignInPage = () => {
     }
   }, [navigate]);
 
-  const { mutate: mutationSignIn, isPending, isSuccess, isError, data } = useMutation({
-    mutationFn: (data) => UserService.loginUser(data)
-  });
+  const handleGetDetailsUser = async (id, token) => {
+    const res = await UserService.getDetailsUser(id, token);
+    dispatch(updateUser({ ...res?.data, access_token: token }));
+    return res;
+  };
 
-  useEffect(() => {
-    if (isSuccess && data?.status === "OK") {
+  const handleGetCart = async (accessToken) => {
+    const res = await CartService.getCartByUser(accessToken);
+    dispatch(setCart(res?.data));
+    return res;
+  }
+
+  const { mutate: mutationSignIn, isPending, error, isError } = useMutation({
+    mutationFn: (data) => UserService.loginUser(data),
+    onSuccess: async (data) => {
       localStorage.setItem('access_token', JSON.stringify(data?.access_token));
       message.success("Đăng nhập thành công");
 
       if (data?.access_token) {
         const decoded = jwtDecode(data?.access_token);
         if (decoded?.id) {
-          handleGetDetailsUser(decoded.id, data?.access_token);
-          handleGetCart(data?.access_token);
+          await handleGetDetailsUser(decoded.id, data?.access_token);
+          await handleGetCart(data?.access_token);
         }
       }
 
-      if (location?.state) {
-        navigate(location?.state);
+      if (location?.state?.from) {
+        navigate(location?.state?.from);
       } else {
         navigate("/");
       }
-    } else if (isError || data?.status === "ERR") {
-      message.error("Đăng nhập thất bại");
+    },
+    onError: (error) => {
+      message.error(error?.response?.data?.message || "Đăng nhập thất bại");
     }
-  }, [isSuccess, isError]);
-
-  const handleGetDetailsUser = async (id, token) => {
-    const res = await UserService.getDetailsUser(id, token);
-    dispatch(updateUser({ ...res?.data, access_token: token }));
-  };
-
-  const handleGetCart = async (accessToken) => {
-    const res = await CartService.getCartByUser(accessToken);
-    dispatch(setCart(res?.data));
-  }
+  });
 
   const handleOnChangeEmail = (e) => {
     setEmail(e.target.value);
@@ -136,9 +136,9 @@ const SignInPage = () => {
                 />
               </Form.Item>
             </WrapperInputField>
-            {data?.status === "ERR" && (
+            {isError && (
               <div style={{ color: "red", marginBottom: "20px", fontSize: "14px", maxWidth: "300px" }}>
-                {data?.message}
+                Đăng nhập thất bại
               </div>
             )}
           </Form>

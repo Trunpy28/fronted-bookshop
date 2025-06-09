@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ConfigProvider, Menu } from "antd";
+import React from "react";
+import { ConfigProvider, Menu, Layout } from "antd";
 import {
   AppstoreOutlined,
   UserOutlined,
@@ -8,19 +8,31 @@ import {
   AppstoreAddOutlined,
   ContainerOutlined,
   GiftOutlined,
+  DashboardOutlined,
 } from "@ant-design/icons";
 import HeaderComponent from "../../components/HeaderComponent/HeaderComponent";
-import AdminUser from "../../components/AdminUser/AdminUser";
-import AdminProduct from "../../components/AdminProduct/AdminProduct";
-import AdminOrder from "../../components/AdminOrder/AdminOrder";
-import AdminGenre from "../../components/AdminGenre/AdminGenre";
-import AdminInventory from "../../components/AdminInventory/AdminInventory";
-import AdminVoucher from "../../components/AdminVoucher/AdminVoucher";
 import { useSelector } from 'react-redux';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+
+const { Sider, Content } = Layout;
 
 const AdminPage = () => {
   const user = useSelector((state) => state.user);
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Xác định key từ đường dẫn hiện tại
+  const getSelectedKey = () => {
+    const path = location.pathname;
+    if (path === '/admin' || path === '/admin/') return '';
+    
+    const segments = path.split('/');
+    if (segments.length > 2) {
+      return segments[2]; // Lấy phần admin/:key
+    }
+
+    return '';
+  };
 
   // Kiểm tra quyền admin
   if (!user?.id) {
@@ -31,28 +43,15 @@ const AdminPage = () => {
     return <Navigate to="/forbidden" />;
   }
 
-  const [keySelected, setKeySelected] = useState("user");
-
-  const renderPage = (key) => {
-    switch (key) {
-      case 'user':
-        return <AdminUser />;
-      case 'product':
-        return <AdminProduct />;
-      case 'order':
-        return <AdminOrder />;
-      case 'genre':
-        return <AdminGenre />;
-      case 'inventory':
-        return <AdminInventory />;
-      case 'voucher':
-        return <AdminVoucher />;
-      default:
-        return <div></div>;
-    }
-  };
-
   const items = [
+    {
+      key: "",
+      label: "Tổng quan",
+      icon: <DashboardOutlined />,
+    },
+    {
+      type: "divider",
+    },
     {
       key: "user",
       label: "Người dùng",
@@ -104,37 +103,86 @@ const AdminPage = () => {
   ];
 
   const handleOnClick = ({ key }) => {
-    setKeySelected(key);
+    if(key === '') {
+      navigate('/admin');
+    } else {
+      navigate(`/admin/${key}`);
+    }
   };
 
   return (
     <div>
       <HeaderComponent isHiddenSearch isHiddenCart />
-      <div style={{ display: "flex", marginTop: '30px' }}>
-        <ConfigProvider
-          theme={{
-            token: {
-              fontSize: 18,
-            },
+      <Layout style={{ minHeight: 'calc(100vh - 64px)' }}>
+        <Sider
+          width={230}
+          style={{
+            background: '#fff',
+            marginTop: '30px',
+            marginLeft: '10px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.09)',
+            borderRadius: '10px',
+            overflow: 'hidden'
           }}
         >
-          <Menu
-            onClick={handleOnClick}
-            style={{
-              width: 256,
-              boxShadow: '1px 1px 2px #ccc',
-              height: '150vh'
+          <ConfigProvider
+            theme={{
+              token: {
+                fontSize: 16,
+                colorPrimary: '#1677ff',
+                borderRadius: 6,
+              },
+              components: {
+                Menu: {
+                  fontSize: 16,
+                  itemSelectedBg: '#e6f4ff',
+                  itemSelectedColor: '#1677ff',
+                  itemHoverBg: '#f5f5f5',
+                  itemHoverColor: '#1677ff',
+                  fontWeightStrong: 600,
+                  itemHeight: 50,
+                  itemMarginInline: 10,
+                }
+              }
             }}
-            defaultSelectedKeys={["user"]}
-            mode="inline"
-            items={items}
-          />
-        </ConfigProvider>
+          >
+            <div style={{ 
+              padding: '16px 16px', 
+              fontWeight: 'bold', 
+              fontSize: '18px', 
+              borderBottom: '1px solid #f0f0f0',
+              display: 'flex',
+              alignItems: 'center',
+              color: '#1677ff'
+            }}>
+              <ContainerOutlined style={{ marginRight: '10px' }} /> Quản trị BKshop
+            </div>
+            <Menu
+              onClick={handleOnClick}
+              style={{
+                height: 'calc(100vh - 130px)',
+                border: 'none',
+                padding: '10px'
+              }}
+              selectedKeys={[getSelectedKey()]}
+              mode="inline"
+              items={items}
+            />
+          </ConfigProvider>
+        </Sider>
 
-        <div style={{padding: '20px', flex: '1'}}>
-          {renderPage(keySelected)}
-        </div>
-      </div>
+        <Content style={{ padding: '20px 30px', marginTop: '30px' }}>
+          <div style={{ 
+            background: '#fff', 
+            padding: '24px', 
+            minHeight: 'calc(100vh - 64px - 50px)',
+            borderRadius: '10px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.09)'
+          }}>
+            <Outlet />
+          </div>
+        </Content>
+      </Layout>
     </div>
   );
 };

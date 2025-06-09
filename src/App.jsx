@@ -1,6 +1,6 @@
 import axios from "axios";
 import React, { Fragment, useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, Outlet } from "react-router-dom";
 import { routes } from "./routes";
 import DefaultComponent from "./components/DefaultComponent/DefaultComponent";
 import { isJsonString } from "./utils/utils";
@@ -115,6 +115,33 @@ function App() {
             );
           }
 
+          // Xử lý route có children (route con)
+          if (route.children) {
+            return (
+              <Route 
+                key={route.path} 
+                path={route.path} 
+                element={
+                  <Layout>
+                    <Page />
+                  </Layout>
+                }
+              >
+                {route.children.map((child) => {
+                  const ChildPage = child.page;
+                  return (
+                    <Route
+                      key={`${route.path}/${child.path}`}
+                      path={child.path}
+                      element={<ChildPage />}
+                    />
+                  );
+                })}
+              </Route>
+            );
+          }
+
+          // Route thông thường
           return (
             <Route
               key={route.path}

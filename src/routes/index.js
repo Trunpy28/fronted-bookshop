@@ -19,6 +19,13 @@ import ForbiddenPage from "../pages/ForbiddenPage/ForbiddenPage";
 import ShippingAddressPage from "../pages/ShippingAddress/ShippingAddressPage";
 import VoucherPage from "../pages/VoucherPage/VoucherPage";
 import ProductListPage from "../pages/ProductListPage/ProductListPage";
+import AdminDashboard from "../components/AdminDashboard/AdminDashboard";
+import AdminUser from "../components/AdminUser/AdminUser";
+import AdminProduct from "../components/AdminProduct/AdminProduct";
+import AdminOrder from "../components/AdminOrder/AdminOrder";
+import AdminGenre from "../components/AdminGenre/AdminGenre";
+import AdminInventory from "../components/AdminInventory/AdminInventory";
+import AdminVoucher from "../components/AdminVoucher/AdminVoucher";
 
 export const routes =  [
     { 
@@ -122,7 +129,37 @@ export const routes =  [
         page: AdminPage,
         isShowHeader: false,
         isPrivate: true,
-        adminManage: true
+        adminManage: true,
+        children: [
+            {
+                path: '', // Default route
+                page: AdminDashboard
+            },
+            {
+                path: 'user',
+                page: AdminUser
+            },
+            {
+                path: 'product',
+                page: AdminProduct
+            },
+            {
+                path: 'order',
+                page: AdminOrder
+            },
+            {
+                path: 'genre',
+                page: AdminGenre
+            },
+            {
+                path: 'inventory',
+                page: AdminInventory
+            },
+            {
+                path: 'voucher',
+                page: AdminVoucher
+            }
+        ]
     },
     {
         path: "/change-password",

@@ -98,7 +98,7 @@ const AdminOrder = () => {
       setSelectedStatus('');
     },
     onError: (error) => {
-      message.error(error.response.data.message);
+      message.error(error.response.data.message || "Có lỗi xảy ra");
     }
   });
 
@@ -110,11 +110,12 @@ const AdminOrder = () => {
       return res;
     },
     onSuccess: () => {
+      message.success("Xóa đơn hàng thành công");
       queryOrder.refetch();
       setIsModalOpenDelete(false);
     },
     onError: (error) => {
-      message.error(error.response.data.message);
+      message.error(error.response.data.message || "Có lỗi xảy ra");
     }
   });
 
