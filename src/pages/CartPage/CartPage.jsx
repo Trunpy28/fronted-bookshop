@@ -125,7 +125,7 @@ const CartPage = () => {
     data: voucherData, 
     isLoading: isLoadingVoucher,
     isFetching: isFetchingVoucher,
-    refetch: refetchVoucher
+    refetch: refetchVoucher,
   } = useQuery({
     queryKey: ["voucher", appliedVoucherCode],
     queryFn: () => {
@@ -238,16 +238,9 @@ const CartPage = () => {
       message.warning("Vui lòng nhập mã giảm giá");
       return;
     }
-    
+
     setAppliedVoucherCode(voucherCode);
-    refetchVoucher().then(result => {
-      if (result.data) {
-        message.success("Áp dụng mã giảm giá thành công");
-      }
-    }).catch(error => {
-      setAppliedVoucherCode("");
-      message.error(error?.response?.data?.message || "Mã giảm giá không hợp lệ");
-    });
+    refetchVoucher();
   };
 
   const handleRemoveVoucher = () => {
@@ -735,7 +728,7 @@ const CartPage = () => {
                         </div>
                       </div>
                     )}
-                    {appliedVoucherCode && discountPrice === 0 && (
+                    {appliedVoucherCode && voucherData?.data && discountPrice === 0 && (
                       <div
                         style={{
                           marginTop: "8px",
@@ -750,6 +743,17 @@ const CartPage = () => {
                             {convertPrice(voucherData.data.minOrderValue)}
                           </div>
                         )}
+                      </div>
+                    )}
+                    {appliedVoucherCode && !voucherData?.data && (
+                      <div
+                        style={{
+                          marginTop: "8px",
+                          fontSize: "13px",
+                          color: "#ff4d4f",
+                        }}
+                      >
+                        Mã giảm giá không hợp lệ.
                       </div>
                     )}
                   </div>

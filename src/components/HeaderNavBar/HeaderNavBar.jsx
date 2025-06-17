@@ -2,12 +2,14 @@ import React from "react";
 import { DownOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import { Dropdown, ConfigProvider, Space } from "antd";
 import { LinkNavBar, TypeProductWrapper } from "./style";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import * as GenreService from "../../services/GenreService";
 import { useQuery } from "@tanstack/react-query";
 import Loading from "../LoadingComponent/Loading";
+
 const HeaderNavBar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   const { data: genresData, isPending } = useQuery({
     queryKey: ['genres'],
@@ -54,14 +56,14 @@ const HeaderNavBar = () => {
               </Space>
             </LinkNavBar>
           </Dropdown>
-          <LinkNavBar to={'/'}>
+          <LinkNavBar to={'/'} isActive={location.pathname === '/'}>
             <Space>TRANG CHỦ</Space>
           </LinkNavBar>
-          <LinkNavBar to={'/contact'}>
-            <Space>LIÊN HỆ</Space>
+          <LinkNavBar to={'/vouchers'} isActive={location.pathname.includes('/vouchers')}>
+            <Space>KHUYẾN MÃI</Space>
           </LinkNavBar>
-          <LinkNavBar to={'/vouchers'}>
-            <Space>KHUYẾN MẠI</Space>
+          <LinkNavBar to={'/contact'} isActive={location.pathname.includes('/contact')}>
+            <Space>LIÊN HỆ</Space>
           </LinkNavBar>
         </ConfigProvider>
       </TypeProductWrapper>

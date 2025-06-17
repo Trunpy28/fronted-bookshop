@@ -12,10 +12,11 @@ export const LinkNavBar = styled(Link)`
     text-decoration: none;
     padding: 20px 20px;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: ${props => props.isActive ? '700' : '600'};
     color: white;
+    background-color: ${props => props.isActive ? '#0C6136' : '#00A651'};
     &:hover{
-        background-color: #0C6136;
+        background-color: #27B96C;
         color: white;
     }
 `

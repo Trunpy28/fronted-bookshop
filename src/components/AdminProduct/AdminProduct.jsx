@@ -324,7 +324,7 @@ const AdminProduct = () => {
       )
     },
     {
-      title: "Giá bìa",
+      title: "Giá bán",
       dataIndex: "originalPrice",
       render: (text) => (
         <div style={{ 
@@ -589,7 +589,7 @@ const AdminProduct = () => {
             </Form.Item>
 
             <Form.Item
-              label="Giá bìa"
+              label="Giá bán"
               name="originalPrice"
               rules={[{ required: true, message: "Vui lòng nhập giá bìa!" }]}
             >
@@ -757,7 +757,7 @@ const AdminProduct = () => {
             </Form.Item>
 
             <Form.Item
-              label="Giá bìa"
+              label="Giá bán"
               name="originalPrice"
               rules={[{ required: true, message: "Vui lòng nhập giá bìa!" }]}
             >

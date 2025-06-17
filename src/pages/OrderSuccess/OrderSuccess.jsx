@@ -18,15 +18,15 @@ const OrderSuccess = () => {
   let order = state?.order;
   const orderId = searchParams.get("orderId");
 
-  const { data: orderData, isPending } = useQuery({
+  const { data: orderData, isFetching } = useQuery({
     queryKey: ["order-success", orderId],
     queryFn: () => OrderService.getDetailsOrder(orderId, user?.access_token),
     enabled: !!orderId && !!user?.access_token,
   });
-
+  
   return (
     <div style={{ background: "#f5f5fa", width: "100%", padding: "30px 15vw" }}>
-      <Loading isLoading={isPending}>
+      <Loading isLoading={isFetching}>
         <SuccessIcon>
           <CheckCircleOutlined style={{ fontSize: "80px", color: "#52c41a" }} />
           <h2 style={{ fontSize: "28px", margin: "15px 0 10px" }}>

@@ -336,6 +336,7 @@ const AdminDashboard = () => {
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart
                     data={monthlyRevenueData}
+                    margin={{ right: 20, left: 30 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
@@ -387,6 +388,7 @@ const AdminDashboard = () => {
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart
                     data={dailyRevenueData}
+                    margin={{ right: 20, left: 30 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />

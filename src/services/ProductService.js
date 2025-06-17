@@ -4,16 +4,6 @@ import { axiosJWT } from './UserService';
 const apiUrl = import.meta.env.VITE_API_URL;
 const productApiUrl = `${apiUrl}/product`;
 
-export const getAllProduct = async (search, limit) => {
-    let res = {};
-    if (search?.length > 0) {
-        res = await axios.get(`${productApiUrl}/get-all/?filter=name&filter=${search}&limit=${limit}`);
-    } else {
-        res = await axios.get(`${productApiUrl}/get-all?limit=${limit}`);
-    }
-    return res.data;
-};
-
 export const getProductType = async (type, page, limit) => {
     if (type) {
         const res = await axios.get(`${productApiUrl}/get-all?filter=type&filter=${type}&limit=${limit}&page=${page}`);
@@ -53,15 +43,6 @@ export const getDetailsProduct = async (id) => {
 
 export const deleteProduct = async (id, access_token) => {
     const res = await axiosJWT.delete(`${productApiUrl}/delete/${id}`, {
-        headers: {
-            Authorization: `Bearer ${access_token}`,
-        },
-    });
-    return res.data;
-};
-
-export const deleteManyProduct = async (data, access_token) => {
-    const res = await axiosJWT.post(`${productApiUrl}/delete-many`, data, {
         headers: {
             Authorization: `Bearer ${access_token}`,
         },

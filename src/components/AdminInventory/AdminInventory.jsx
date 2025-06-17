@@ -180,26 +180,27 @@ const AdminInventory = () => {
     try {
       const values = await formAddItem.validateFields();
       
-      // Tìm sản phẩm đã chọn trong danh sách products
-      const selectedProduct = products?.find(product => product._id === values.product);
-      
-      if (!selectedProduct) {
-        message.error("Không tìm thấy thông tin sản phẩm");
-        return;
-      }
+                // Tìm sản phẩm đã chọn trong danh sách products
+          const selectedProduct = products?.find(product => product._id === values.product);
+          
+          if (!selectedProduct) {
+            message.error("Không tìm thấy thông tin sản phẩm");
+            return;
+          }
 
-      const newItem = {
-        product: {
-          _id: selectedProduct._id,
-          productCode: selectedProduct.productCode,
-          name: selectedProduct.name,
-          images: selectedProduct.images,
-          originalPrice: selectedProduct.originalPrice,
-          author: selectedProduct.author,
-          publicationYear: selectedProduct.publicationYear
-        },
-        quantity: values.quantity
-      };
+          const newItem = {
+            product: {
+              _id: selectedProduct._id,
+              productCode: selectedProduct.productCode,
+              name: selectedProduct.name,
+              images: selectedProduct.images,
+              originalPrice: selectedProduct.originalPrice,
+              author: selectedProduct.author,
+              publicationYear: selectedProduct.publicationYear
+            },
+            importPrice: values.importPrice,
+            quantity: values.quantity
+          };
       
       if (isModalAddOpen) {
         // Thêm vào form tạo lô hàng mới
@@ -229,7 +230,6 @@ const AdminInventory = () => {
     setSelectedBatch(record);
     formEdit.setFieldsValue({
       supplierName: record.supplierName,
-      discountPercentage: record.discountPercentage,
       notes: record.notes,
       dateReceived: dayjs(record.dateReceived)
     });
@@ -345,23 +345,16 @@ const AdminInventory = () => {
       )
     },
     {
-      title: "Chiết khấu (%)",
-      dataIndex: "discountPercentage",
-      render: (text) => (
-        <div style={{ 
-          backgroundColor: "#f6ffed", 
-          color: "#52c41a",
+      title: "Tổng giá trị",
+      dataIndex: "totalPrice",
+      render: (value) => (
+        <span style={{ 
+          color: "#CD3238",
           fontWeight: "bold",
-          display: "inline-block",
-          padding: "2px 8px",
-          borderRadius: "10px",
           fontSize: "16px",
-          border: "1px solid #b7eb8f",
-          minWidth: "40px",
-          textAlign: "center"
         }}>
-          {text}%
-        </div>
+          {convertPrice(value)}
+        </span>
       )
     },
     {
@@ -495,24 +488,7 @@ const AdminInventory = () => {
             >
               <Input placeholder="Nhập tên nhà cung cấp" />
             </Form.Item>
-            <Form.Item
-              label="Chiết khấu (%)"
-              name="discountPercentage"
-              initialValue={0}
-              rules={[
-                { required: true, message: "Vui lòng nhập phần trăm chiết khấu!" },
-                () => ({
-                  validator(_, value) {
-                    if (value >= 0 && value <= 100) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error('Phần trăm chiết khấu phải từ 0 đến 100!'));
-                  },
-                }),
-              ]}
-            >
-              <InputNumber min={0} max={100} style={{ width: "20%" }} />
-            </Form.Item>
+
             <Form.Item
               label="Thời gian nhập lô"
               name="dateReceived"
@@ -566,10 +542,19 @@ const AdminInventory = () => {
                   render: (text) => text || "N/A"
                 },
                 {
-                  title: "Đơn giá",
+                  title: "Đơn giá bán",
                   dataIndex: ["product", "originalPrice"],
                   render: (price) => (
                     <span className="text-xl font-bold text-red-500">
+                      {convertPrice(price) || "N/A"}
+                    </span>
+                  )
+                },
+                {
+                  title: "Đơn giá nhập",
+                  dataIndex: "importPrice",
+                  render: (price) => (
+                    <span className="text-xl font-bold text-blue-500">
                       {convertPrice(price) || "N/A"}
                     </span>
                   )
@@ -612,23 +597,7 @@ const AdminInventory = () => {
             >
               <Input placeholder="Nhập tên nhà cung cấp" />
             </Form.Item>
-            <Form.Item
-              label="Chiết khấu (%)"
-              name="discountPercentage"
-              rules={[
-                { required: true, message: "Vui lòng nhập phần trăm chiết khấu!" },
-                () => ({
-                  validator(_, value) {
-                    if (value >= 0 && value <= 100) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error('Phần trăm chiết khấu phải từ 0 đến 100!'));
-                  },
-                }),
-              ]}
-            >
-              <InputNumber min={0} max={100} style={{ width: "100%" }} />
-            </Form.Item>
+
             <Form.Item
               label="Thời gian nhập lô"
               name="dateReceived"
@@ -657,6 +626,7 @@ const AdminInventory = () => {
           open={isModalManageItemsOpen}
           onCancel={() => setIsModalManageItemsOpen(false)}
           width={800}
+          zIndex={1000}
           footer={[
             <Button key="add" type="primary" onClick={() => {
               formAddItem.resetFields();
@@ -669,6 +639,14 @@ const AdminInventory = () => {
             </Button>
           ]}
         >
+          <div style={{ marginBottom: '20px', padding: '15px' }}>
+            <Statistic 
+              title="Tổng giá trị lô hàng" 
+              value={selectedBatch?.totalPrice || 0} 
+              formatter={value => convertPrice(value)}
+              valueStyle={{ color: '#CD3238', fontWeight: 'bold', fontSize: '24px' }}
+            />
+          </div>
           <Table
             columns={[
               {
@@ -695,10 +673,19 @@ const AdminInventory = () => {
                 render: (text) => text || "N/A"
               },
               {
-                title: "Đơn giá",
+                title: "Đơn giá bán",
                 dataIndex: ["product", "originalPrice"],
                 render: (price) => (
                   <span className="text-xl font-bold text-red-500">
+                    {convertPrice(price) || "N/A"}
+                  </span>
+                )
+              },
+              {
+                title: "Đơn giá nhập",
+                dataIndex: "importPrice",
+                render: (price) => (
+                  <span className="text-xl font-bold text-blue-500">
                     {convertPrice(price) || "N/A"}
                   </span>
                 )
@@ -757,6 +744,7 @@ const AdminInventory = () => {
           onOk={handleAddItemToForm}
           confirmLoading={!isModalAddOpen && mutationAddItem.isPending}
           width={700}
+          zIndex={1500}
         >
           <Form form={formAddItem} layout="vertical">
             <Form.Item
@@ -782,11 +770,24 @@ const AdminInventory = () => {
               />
             </Form.Item>
             <Form.Item
+              label="Đơn giá nhập"
+              name="importPrice"
+              rules={[{ required: true, message: "Vui lòng nhập giá nhập vào!" }]}
+            >
+              <InputNumber 
+                style={{width: '40%'}}
+                min={0}
+                formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
+                addonAfter={<span style={{color: '#CD3238', fontWeight: 'bold'}}>VNĐ</span>}
+              />
+            </Form.Item>
+            <Form.Item
               label="Số lượng"
               name="quantity"
               rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
             >
-              <InputNumber min={1} style={{ width: '100%' }} />
+              <InputNumber min={1} style={{ width: '30%' }} />
             </Form.Item>
           </Form>
         </Modal>
