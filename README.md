@@ -4,7 +4,7 @@
 ### 1. Clone repository
 ```bash
 git clone <repository-url>
-cd frontend-bookshop
+cd fronted-bookshop
 ```
 
 ### 2. Cài đặt các dependencies

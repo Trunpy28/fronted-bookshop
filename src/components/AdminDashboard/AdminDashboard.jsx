@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Row, Col, Card, Empty, DatePicker } from 'antd';
+import { Row, Col, Card, Empty, DatePicker, Button } from 'antd';
 import { 
   UserOutlined, 
   InboxOutlined, 
@@ -9,7 +9,9 @@ import {
   AppstoreOutlined,
   DollarOutlined,
   StarOutlined,
-  LineChartOutlined
+  LineChartOutlined,
+  DownloadOutlined,
+  FileExcelOutlined
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
@@ -30,6 +32,7 @@ import Loading from '../LoadingComponent/Loading';
 import * as message from "../Message/Message";
 import dayjs from 'dayjs';
 import locale from 'antd/lib/date-picker/locale/vi_VN';
+import * as XLSX from 'xlsx';
 
 // Định nghĩa màu sắc nhất quán cho toàn bộ dashboard
 const COLORS = {
@@ -254,9 +257,174 @@ const AdminDashboard = () => {
     'Doanh thu': item.revenue
   })) || [];
 
+  // Hàm xuất dữ liệu ra Excel
+  const exportToExcel = (data, sheetName, fileName) => {
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    
+    // Điều chỉnh độ rộng cột
+    const maxWidth = data.reduce((w, r) => Math.max(w, Object.keys(r).length), 10);
+    const colWidths = Array(maxWidth).fill({ wch: 20 });
+    worksheet['!cols'] = colWidths;
+    
+    // Xuất file
+    XLSX.writeFile(workbook, `${fileName}_${new Date().toLocaleDateString('vi-VN')}.xlsx`);
+    message.success('Xuất báo cáo Excel thành công!');
+  };
+  
+  // Xuất dữ liệu doanh thu theo năm
+  const exportYearlyRevenue = () => {
+    if (monthlyRevenueData.length === 0) {
+      message.warning('Không có dữ liệu để xuất');
+      return;
+    }
+    
+    const data = monthlyRevenueData.map(item => ({
+      'Thời gian': item.name,
+      'Doanh thu (VNĐ)': item['Doanh thu'],
+    }));
+    
+    exportToExcel(data, 'DoanhThuTheoNam', `Doanh_Thu_Nam_${yearlyRevenueYear}`);
+  };
+  
+  // Xuất dữ liệu doanh thu theo tháng
+  const exportMonthlyRevenue = () => {
+    if (dailyRevenueData.length === 0) {
+      message.warning('Không có dữ liệu để xuất');
+      return;
+    }
+    
+    const data = dailyRevenueData.map(item => ({
+      'Thời gian': item.name,
+      'Doanh thu (VNĐ)': item['Doanh thu'],
+    }));
+    
+    exportToExcel(data, 'DoanhThuTheoThang', `Doanh_Thu_Thang_${monthlyRevenueMonth}_${monthlyRevenueYear}`);
+  };
+  
+  // Xuất dữ liệu trạng thái đơn hàng
+  const exportOrderStatusData = () => {
+    if (orderStatusData.length === 0) {
+      message.warning('Không có dữ liệu để xuất');
+      return;
+    }
+    
+    exportToExcel(orderStatusData, 'TrangThaiDonHang', 'Thong_Ke_Trang_Thai_Don_Hang');
+  };
+  
+  // Xuất dữ liệu phương thức thanh toán
+  const exportPaymentMethodData = () => {
+    if (paymentMethodData.length === 0) {
+      message.warning('Không có dữ liệu để xuất');
+      return;
+    }
+    
+    exportToExcel(paymentMethodData, 'PhuongThucThanhToan', 'Thong_Ke_Phuong_Thuc_Thanh_Toan');
+  };
+  
+  // Xuất dữ liệu trạng thái thanh toán
+  const exportPaymentStatusData = () => {
+    if (paymentStatusData.length === 0) {
+      message.warning('Không có dữ liệu để xuất');
+      return;
+    }
+    
+    exportToExcel(paymentStatusData, 'TrangThaiThanhToan', 'Thong_Ke_Trang_Thai_Thanh_Toan');
+  };
+  
+  // Xuất dữ liệu đánh giá
+  const exportRatingData = () => {
+    if (ratingData.length === 0) {
+      message.warning('Không có dữ liệu để xuất');
+      return;
+    }
+    
+    exportToExcel(ratingData, 'ThongKeDanhGia', 'Thong_Ke_Danh_Gia');
+  };
+  
+  // Xuất tất cả dữ liệu thống kê
+  const exportAllData = () => {
+    if (!generalStats) {
+      message.warning('Không có dữ liệu để xuất');
+      return;
+    }
+    
+    const workbook = XLSX.utils.book_new();
+    
+    // Thống kê chung
+    const generalData = [
+      { 'Chỉ số': 'Tổng số tài khoản', 'Giá trị': generalStats.totalUsers || 0 },
+      { 'Chỉ số': 'Tổng số sách', 'Giá trị': generalStats.totalBooks || 0 },
+      { 'Chỉ số': 'Tổng số thể loại', 'Giá trị': generalStats.totalGenres || 0 },
+      { 'Chỉ số': 'Tổng doanh thu', 'Giá trị': generalStats.totalRevenue || 0 },
+      { 'Chỉ số': 'Số lượt đánh giá', 'Giá trị': generalStats.totalReviews || 0 },
+      { 'Chỉ số': 'Tổng đơn hàng', 'Giá trị': generalStats.totalOrders || 0 },
+      { 'Chỉ số': 'Số lô đã nhập', 'Giá trị': generalStats.totalBatches || 0 },
+      { 'Chỉ số': 'Mã giảm giá đang có hiệu lực', 'Giá trị': generalStats.activeVouchers || 0 }
+    ];
+    
+    // Thêm các sheet vào workbook
+    const generalSheet = XLSX.utils.json_to_sheet(generalData);
+    XLSX.utils.book_append_sheet(workbook, generalSheet, 'ThongKeChung');
+    
+    // Thêm các sheet khác nếu có dữ liệu
+    if (monthlyRevenueData.length > 0) {
+      const yearlyData = monthlyRevenueData.map(item => ({
+        'Thời gian': item.name,
+        'Doanh thu (VNĐ)': item['Doanh thu'],
+      }));
+      const yearlySheet = XLSX.utils.json_to_sheet(yearlyData);
+      XLSX.utils.book_append_sheet(workbook, yearlySheet, 'DoanhThuTheoNam');
+    }
+    
+    if (dailyRevenueData.length > 0) {
+      const monthlyData = dailyRevenueData.map(item => ({
+        'Thời gian': item.name,
+        'Doanh thu (VNĐ)': item['Doanh thu'],
+      }));
+      const monthlySheet = XLSX.utils.json_to_sheet(monthlyData);
+      XLSX.utils.book_append_sheet(workbook, monthlySheet, 'DoanhThuTheoThang');
+    }
+    
+    if (orderStatusData.length > 0) {
+      const orderStatusSheet = XLSX.utils.json_to_sheet(orderStatusData);
+      XLSX.utils.book_append_sheet(workbook, orderStatusSheet, 'TrangThaiDonHang');
+    }
+    
+    if (paymentMethodData.length > 0) {
+      const paymentMethodSheet = XLSX.utils.json_to_sheet(paymentMethodData);
+      XLSX.utils.book_append_sheet(workbook, paymentMethodSheet, 'PhuongThucThanhToan');
+    }
+    
+    if (paymentStatusData.length > 0) {
+      const paymentStatusSheet = XLSX.utils.json_to_sheet(paymentStatusData);
+      XLSX.utils.book_append_sheet(workbook, paymentStatusSheet, 'TrangThaiThanhToan');
+    }
+    
+    if (ratingData.length > 0) {
+      const ratingSheet = XLSX.utils.json_to_sheet(ratingData);
+      XLSX.utils.book_append_sheet(workbook, ratingSheet, 'ThongKeDanhGia');
+    }
+    
+    // Xuất file
+    XLSX.writeFile(workbook, `Bao_Cao_Thong_Ke_${new Date().toLocaleDateString('vi-VN')}.xlsx`);
+    message.success('Xuất báo cáo Excel thành công!');
+  };
+
   return (
     <div style={{ padding: '20px' }}>
-      <h2 style={{ marginBottom: '24px', fontSize: '24px' }}>Tổng quan</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '24px', margin: 0 }}>Tổng quan</h2>
+        <Button 
+          type="primary" 
+          icon={<FileExcelOutlined />} 
+          onClick={exportAllData}
+          disabled={isGeneralStatsPending}
+        >
+          Xuất báo cáo tổng hợp
+        </Button>
+      </div>
       
       <Row gutter={[20, 20]}>
         {dashboardCards.map((card, index) => (
@@ -318,14 +486,24 @@ const AdminDashboard = () => {
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Doanh thu theo năm</span>
-                <DatePicker
-                  picker="year"
-                  value={dayjs().year(yearlyRevenueYear)}
-                  onChange={(date) => date && setYearlyRevenueYear(date.year())}
-                  allowClear={false}
-                  locale={locale}
-                  style={{ width: 120 }}
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <DatePicker
+                    picker="year"
+                    value={dayjs().year(yearlyRevenueYear)}
+                    onChange={(date) => date && setYearlyRevenueYear(date.year())}
+                    allowClear={false}
+                    locale={locale}
+                    style={{ width: 120 }}
+                  />
+                  <Button 
+                    type="primary" 
+                    icon={<DownloadOutlined />} 
+                    onClick={exportYearlyRevenue}
+                    disabled={isYearlyRevenuePending || monthlyRevenueData.length === 0}
+                  >
+                    Excel
+                  </Button>
+                </div>
               </div>
             }
             variant="outlined"
@@ -363,7 +541,7 @@ const AdminDashboard = () => {
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Doanh thu theo tháng</span>
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <DatePicker
                     picker="month"
                     value={dayjs().year(monthlyRevenueYear).month(monthlyRevenueMonth - 1)}
@@ -377,6 +555,14 @@ const AdminDashboard = () => {
                     locale={locale}
                     style={{ width: 140 }}
                   />
+                  <Button 
+                    type="primary" 
+                    icon={<DownloadOutlined />} 
+                    onClick={exportMonthlyRevenue}
+                    disabled={isMonthlyRevenuePending || dailyRevenueData.length === 0}
+                  >
+                    Excel
+                  </Button>
                 </div>
               </div>
             }
@@ -414,7 +600,19 @@ const AdminDashboard = () => {
       <Row gutter={[24, 24]} style={{ marginTop: '20px' }}>
         <Col xs={24}>
           <Card 
-            title="Trạng thái đơn hàng" 
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Trạng thái đơn hàng</span>
+                <Button 
+                  type="primary" 
+                  icon={<DownloadOutlined />} 
+                  onClick={exportOrderStatusData}
+                  disabled={isOrderStatusStatsPending || orderStatusData.length === 0}
+                >
+                  Excel
+                </Button>
+              </div>
+            }
             variant="outlined"
             style={{ borderRadius: '10px', boxShadow: '0 3px 6px rgba(0,0,0,0.08)' }}
           >
@@ -442,7 +640,19 @@ const AdminDashboard = () => {
       <Row gutter={[24, 24]} style={{ marginTop: '20px' }}>
         <Col xs={24} md={12}>
           <Card 
-            title="Phương thức thanh toán" 
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Phương thức thanh toán</span>
+                <Button 
+                  type="primary" 
+                  icon={<DownloadOutlined />} 
+                  onClick={exportPaymentMethodData}
+                  disabled={isPaymentStatsPending || paymentMethodData.length === 0}
+                >
+                  Excel
+                </Button>
+              </div>
+            }
             variant="outlined"
             style={{ borderRadius: '10px', boxShadow: '0 3px 6px rgba(0,0,0,0.08)' }}
           >
@@ -469,7 +679,19 @@ const AdminDashboard = () => {
         
         <Col xs={24} md={12}>
           <Card 
-            title="Trạng thái thanh toán" 
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Trạng thái thanh toán</span>
+                <Button 
+                  type="primary" 
+                  icon={<DownloadOutlined />} 
+                  onClick={exportPaymentStatusData}
+                  disabled={isPaymentStatsPending || paymentStatusData.length === 0}
+                >
+                  Excel
+                </Button>
+              </div>
+            }
             variant="outlined"
             style={{ borderRadius: '10px', boxShadow: '0 3px 6px rgba(0,0,0,0.08)' }}
           >
@@ -495,7 +717,19 @@ const AdminDashboard = () => {
         
         <Col xs={24}>
           <Card 
-            title="Đánh giá theo số sao" 
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Đánh giá theo số sao</span>
+                <Button 
+                  type="primary" 
+                  icon={<DownloadOutlined />} 
+                  onClick={exportRatingData}
+                  disabled={isRatingStatsPending || ratingData.length === 0}
+                >
+                  Excel
+                </Button>
+              </div>
+            }
             variant="outlined"
             style={{ borderRadius: '10px', boxShadow: '0 3px 6px rgba(0,0,0,0.08)' }}
           >
