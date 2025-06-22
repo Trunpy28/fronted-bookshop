@@ -545,7 +545,7 @@ const AdminInventory = () => {
                   title: "Đơn giá bán",
                   dataIndex: ["product", "originalPrice"],
                   render: (price) => (
-                    <span className="text-xl font-bold text-red-500">
+                    <span className="text-2xl font-bold text-red-500">
                       {convertPrice(price) || "N/A"}
                     </span>
                   )
@@ -554,7 +554,7 @@ const AdminInventory = () => {
                   title: "Đơn giá nhập",
                   dataIndex: "importPrice",
                   render: (price) => (
-                    <span className="text-xl font-bold text-blue-500">
+                    <span className="text-2xl font-bold text-blue-500">
                       {convertPrice(price) || "N/A"}
                     </span>
                   )
@@ -644,7 +644,7 @@ const AdminInventory = () => {
               title="Tổng giá trị lô hàng" 
               value={selectedBatch?.totalPrice || 0} 
               formatter={value => convertPrice(value)}
-              valueStyle={{ color: '#CD3238', fontWeight: 'bold', fontSize: '24px' }}
+              valueStyle={{ color: '#CD3238', fontWeight: 'bold', fontSize: '28px' }}
             />
           </div>
           <Table
@@ -676,7 +676,7 @@ const AdminInventory = () => {
                 title: "Đơn giá bán",
                 dataIndex: ["product", "originalPrice"],
                 render: (price) => (
-                  <span className="text-xl font-bold text-red-500">
+                  <span className="text-2xl font-bold text-red-500">
                     {convertPrice(price) || "N/A"}
                   </span>
                 )
@@ -685,7 +685,7 @@ const AdminInventory = () => {
                 title: "Đơn giá nhập",
                 dataIndex: "importPrice",
                 render: (price) => (
-                  <span className="text-xl font-bold text-blue-500">
+                  <span className="text-2xl font-bold text-blue-500">
                     {convertPrice(price) || "N/A"}
                   </span>
                 )
@@ -775,11 +775,11 @@ const AdminInventory = () => {
               rules={[{ required: true, message: "Vui lòng nhập giá nhập vào!" }]}
             >
               <InputNumber 
-                style={{width: '40%'}}
+                style={{width: '40%', fontSize: '18px'}}
                 min={0}
                 formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                 parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
-                addonAfter={<span style={{color: '#CD3238', fontWeight: 'bold'}}>VNĐ</span>}
+                addonAfter={<span style={{color: '#CD3238', fontWeight: 'bold', fontSize: '18px'}}>VNĐ</span>}
               />
             </Form.Item>
             <Form.Item
@@ -787,7 +787,7 @@ const AdminInventory = () => {
               name="quantity"
               rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
             >
-              <InputNumber min={1} style={{ width: '30%' }} />
+              <InputNumber min={1} style={{ width: '30%', fontSize: '18px' }} />
             </Form.Item>
           </Form>
         </Modal>

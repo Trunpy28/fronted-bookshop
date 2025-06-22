@@ -153,7 +153,8 @@ const AdminProduct = () => {
           weight: res.data.weight,
           dimensions: res.data.dimensions,
           pageCount: res.data.pageCount,
-          format: res.data.format
+          format: res.data.format,
+          countInStock: res.data.countInStock
         });
          
         setFileList([]);
@@ -331,6 +332,7 @@ const AdminProduct = () => {
           color: "#f5222d", 
           fontWeight: "bold", 
           fontSize: "16px",
+          minWidth: "100px",
         }}>
           {convertPrice(text)}
         </div>
@@ -679,6 +681,17 @@ const AdminProduct = () => {
             </Form.Item>
 
             <Form.Item
+              label="Số lượng"
+              name="countInStock"
+              rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
+            >
+              <InputNumber
+                style={{width: '30%'}}
+                min={0}
+              />
+            </Form.Item>
+
+            <Form.Item
               label="Mô tả"
               name="description"
               rules={[{ required: true, message: "Vui lòng nhập mô tả!" }]}
@@ -835,6 +848,17 @@ const AdminProduct = () => {
               name="format"
             >
               <InputComponent name="format" />
+            </Form.Item>
+
+            <Form.Item
+              label="Số lượng"
+              name="countInStock"
+              rules={[{ required: true, message: "Vui lòng nhập số lượng!" }]}
+            >
+              <InputNumber
+                style={{width: '30%'}}
+                min={0}
+              />
             </Form.Item>
 
             <Form.Item

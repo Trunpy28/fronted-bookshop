@@ -171,7 +171,7 @@ const AdminPage = () => {
           </ConfigProvider>
         </Sider>
 
-        <Content style={{ padding: '20px 30px', marginTop: '30px' }}>
+        <Content style={{ padding: '20px 30px', marginTop: '12px' }}>
           <div style={{ 
             background: '#fff', 
             padding: '24px', 

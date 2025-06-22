@@ -20,8 +20,6 @@ export const createPayPalPayment = async ({ orderId, accessToken }) => {
 
 // Xác nhận thanh toán PayPal
 export const capturePayPalOrder = async ({ paymentId, orderId, accessToken, userId }) => {
-  console.log('abc');
-  
   const response = await axiosJWT.post(
     `${apiUrl}/paypal/capture-order/user/${userId}/order/${orderId}`,
     { paymentId },

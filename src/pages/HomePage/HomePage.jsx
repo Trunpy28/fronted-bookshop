@@ -42,7 +42,7 @@ const HomePage = () => {
   });
 
   const handleViewMoreGenre = (genreId) => {
-    navigate(`/product?genre=${genreId}`);
+    navigate(`/products?genres=${genreId}`);
   };
 
   const handleViewAllProducts = () => {

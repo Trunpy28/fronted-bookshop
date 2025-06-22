@@ -5,7 +5,7 @@ import { WrapperSliderStyle } from './style';
 const SliderComponent = ({ arrImages, onClick }) => {
     const settings = {
         dots: true,
-        infinite: true,
+        infinite: false,
         speed: 500,
         slidesToShow: 1,
         slidesToScroll: 1,
@@ -16,7 +16,7 @@ const SliderComponent = ({ arrImages, onClick }) => {
         <WrapperSliderStyle {...settings}>
             {arrImages.map((image) => {
                 return (
-                  <div key={image} style={{ cursor: onClick ? 'pointer' : 'default' }}>
+                  <div key={image}>
                     <Image 
                       src={image} 
                       alt="slider" 
@@ -24,6 +24,7 @@ const SliderComponent = ({ arrImages, onClick }) => {
                       width='100%' 
                       height='30vw' 
                       onClick={onClick}
+                      style={{ cursor: 'pointer' }}
                     />
                   </div>
                 )

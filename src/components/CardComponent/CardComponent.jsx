@@ -21,7 +21,8 @@ const CardComponent = (props) => {
     <StyledCard
       hoverable
       style={{
-        width: "210px",
+        width: "100%",
+        maxWidth: "200px",
         cursor: "default",
         borderRadius: "10px",
         overflow: "hidden",
@@ -31,7 +32,7 @@ const CardComponent = (props) => {
         <div
           style={{
             height: "230px",
-            width: "210px",
+            width: "200px",
             cursor: "pointer",
             display: "flex",
             justifyContent: "center",

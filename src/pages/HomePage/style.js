@@ -1,10 +1,8 @@
 import styled from "styled-components";
 
 export const WrapperProducts = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 25px;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   margin-top: 30px;
 `
 
@@ -47,7 +45,7 @@ export const GenreSection = styled.div`
 `
 
 export const PageContainer = styled.div`
-  padding: 20px 15vw;
+  padding: 20px 14vw;
   background: linear-gradient(to bottom, #fff, #f0f8f0);
   padding-bottom: 70px;
   min-height: 100vh;

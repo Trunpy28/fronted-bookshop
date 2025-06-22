@@ -37,6 +37,9 @@ const { Option } = Select;
 const ProductListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  console.log(searchParams.get("genres"));
+  
   
   // Lấy từ khóa tìm kiếm từ URL
   const searchQuery = searchParams.get("q") || "";

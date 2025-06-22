@@ -150,8 +150,6 @@ const PaymentPage = () => {
   //Xử lý cho tạo đơn hàng và xác nhận thanh toán paypal
   const handleApprovePayPalOrder = async (data) => {
     try {
-      console.log(data);
-      
       const response = await capturePayPalOrderMutation.mutateAsync({
         paymentId: data?.orderID,
         orderId: newOrderId,

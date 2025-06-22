@@ -202,7 +202,7 @@ const ProductDetailsComponent = ({ productId }) => {
                     className="text-3xl"
                   />
                   <span className="text-gray-500 ml-2 text-2xl">
-                    ({productDetails?.data?.rating?.totalReviews} đánh giá) | Đã bán {productDetails?.data?.selled || 0}
+                    ({productDetails?.data?.rating?.totalReviews} đánh giá) | Đã bán {productDetails?.data?.selled ? productDetails?.data?.selled : 0}
                   </span>
                 </div>
 
@@ -211,41 +211,41 @@ const ProductDetailsComponent = ({ productId }) => {
                     <div className="space-y-6">
                       <div className="flex gap-4">
                         <span className="text-gray-500">Mã sản phẩm:</span>
-                        <span className="font-medium">{productDetails?.data?.productCode}</span>
+                        <span className="font-medium">{productDetails?.data?.productCode ? productDetails?.data?.productCode : 'Không có'}</span>
                       </div>
                       <div className="flex gap-4">
                         <span className="text-gray-500">Thể loại:</span>
-                        <span className="font-medium">{productDetails?.data?.genre.name}</span>
+                        <span className="font-medium">{productDetails?.data?.genre.name ? productDetails?.data?.genre.name : 'Không có'}</span>
                       </div>
                       <div className="flex gap-4">
                         <span className="text-gray-500">Tác giả:</span>
-                        <span className="font-medium">{productDetails?.data?.author}</span>
+                        <span className="font-medium">{productDetails?.data?.author ? productDetails?.data?.author : 'Không có'}</span>
                       </div>
                       <div className="flex gap-4">
                         <span className="text-gray-500">Nhà xuất bản:</span>
-                        <span>{productDetails?.data?.publisher}</span>
+                        <span>{productDetails?.data?.publisher ? productDetails?.data?.publisher : 'Không có'}</span>
                       </div>
                       <div className="flex gap-4">
                         <span className="text-gray-500">Năm xuất bản:</span>
-                        <span>{productDetails?.data?.publicationYear}</span>
+                        <span>{productDetails?.data?.publicationYear ? productDetails?.data?.publicationYear : 'Không có'}</span>
                       </div>
                     </div>
                     <div className="space-y-6">
                       <div className="flex gap-4">
                         <span className="text-gray-500">Kích thước:</span>
-                        <span>{productDetails?.data?.dimensions}</span>
+                        <span>{productDetails?.data?.dimensions ? productDetails?.data?.dimensions : 'Không có'}</span>
                       </div>
                       <div className="flex gap-4">
                         <span className="text-gray-500">Trọng lượng:</span>
-                        <span>{productDetails?.data?.weight}</span>
+                        <span>{productDetails?.data?.weight ? productDetails?.data?.weight : 'Không có'}</span>
                       </div>
                       <div className="flex gap-4">
                         <span className="text-gray-500">Hình thức:</span>
-                        <span>{productDetails?.data?.format}</span>
+                        <span>{productDetails?.data?.format ? productDetails?.data?.format : 'Không có'}</span>
                       </div>
                       <div className="flex gap-4">
                         <span className="text-gray-500">Số trang:</span>
-                        <span>{productDetails?.data?.pageCount}</span>
+                        <span>{productDetails?.data?.pageCount ? productDetails?.data?.pageCount : 'Không có'}</span>
                       </div>
                     </div>
                   </div>

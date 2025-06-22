@@ -263,11 +263,6 @@ const AdminDashboard = () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
     
-    // Điều chỉnh độ rộng cột
-    const maxWidth = data.reduce((w, r) => Math.max(w, Object.keys(r).length), 10);
-    const colWidths = Array(maxWidth).fill({ wch: 20 });
-    worksheet['!cols'] = colWidths;
-    
     // Xuất file
     XLSX.writeFile(workbook, `${fileName}_${new Date().toLocaleDateString('vi-VN')}.xlsx`);
     message.success('Xuất báo cáo Excel thành công!');

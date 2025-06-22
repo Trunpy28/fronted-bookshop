@@ -97,8 +97,6 @@ export const forgotPassword = async (email) => {
 }
 
 export const verifyResetPasswordOTP = async (email, otp) => {
-  console.log(otp);
-  
   const res = await axios.post(`${apiUrl}/user/verify-reset-password-token/${email}`, {
     OTP: otp
   });
@@ -106,8 +104,6 @@ export const verifyResetPasswordOTP = async (email, otp) => {
 }
 
 export const resetPassword = async (email, otp, password) => {
-  console.log(email, otp, password);
-  
   const res = await axios.patch(`${apiUrl}/user/reset-password`, {
     email,
     verify_code: otp,
