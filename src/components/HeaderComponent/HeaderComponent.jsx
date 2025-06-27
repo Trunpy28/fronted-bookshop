@@ -161,7 +161,7 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
     setSearch('');
     navigate(`/product-details/${productId}`);
   };
-
+  
   const renderSearchOptions = () => {
     if (!searchResults?.data || searchResults.data.length === 0) {
       return [];
@@ -223,6 +223,7 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
                 popupMatchSelectWidth={false}
                 listHeight={1000}
                 onSelect={handleSelectProduct}
+                value={search}
               >
                 <Search
                   placeholder="Tìm kiếm sản phẩm bạn muốn mua tại đây"

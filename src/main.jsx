@@ -14,12 +14,12 @@ createRoot(document.getElementById("root")).render(
       <App />
     </Provider>
 
-    <div
+    {/* <div
       style={{
         fontSize: "16px",
       }}
     >
       <ReactQueryDevtools initialIsOpen={false} />
-    </div>
+    </div> */}
   </QueryClientProvider>
 );
