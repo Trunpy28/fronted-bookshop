@@ -118,7 +118,7 @@ const VoucherPage = () => {
         <VoucherCard>
           <VoucherHeader>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: '16px', fontWeight: 'bold' }}>BookShop</Text>
+              <Text style={{ fontSize: '16px', fontWeight: 'bold' }}>BKshop</Text>
               {getStatusBadge(status)}
             </div>
           </VoucherHeader>
@@ -157,7 +157,7 @@ const VoucherPage = () => {
           <VoucherFooter>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <Text code style={{ padding: '5px 8px', fontSize: '14px', letterSpacing: '1px' }}>
+                <Text code style={{ padding: '5px 8px', fontSize: '18px', letterSpacing: '1px', fontWeight: 'bold' }}>
                   {voucher.code}
                 </Text>
               </div>
@@ -221,7 +221,7 @@ const VoucherPage = () => {
               Mã giảm giá
             </Title>
             <Paragraph style={{ fontSize: '16px', color: '#595959' }}>
-              Áp dụng các mã giảm giá để tiết kiệm chi phí khi mua sách tại BookShop
+              Áp dụng các mã giảm giá để tiết kiệm chi phí khi mua sách tại BKshop
             </Paragraph>
           </div>
 
@@ -294,7 +294,7 @@ const VoucherPage = () => {
                       : `Giảm ${convertPrice(selectedVoucher.discountValue)}`}
                   </Title>
                   <Text style={{ fontSize: '16px' }}>
-                    {selectedVoucher.description || 'Mã giảm giá từ BookShop'}
+                    {selectedVoucher.description || 'Mã giảm giá từ BKshop'}
                   </Text>
                 </div>
                 

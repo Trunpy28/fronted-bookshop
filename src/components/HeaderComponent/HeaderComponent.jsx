@@ -1,9 +1,11 @@
 import React, { useEffect, useLayoutEffect, useState } from "react";
-import { Badge, Col, Popover } from "antd";
+import { Badge, Col, Popover, AutoComplete } from "antd";
 import {
   WrapperHeader,
   WrapperHeaderButton,
   WrapperPopupContent,
+  WrapperSearchItem,
+  WrapperSearchItemInfo
 } from "./style";
 import logo from "../../assets/images/bookshop_logo.jpg";
 import { Input, ConfigProvider } from "antd";
@@ -20,9 +22,12 @@ import {
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import * as UserService from "../../services/UserService";
+import * as ProductService from "../../services/ProductService";
 import { resetUser } from "../../redux/slices/userSlice";
 import Loading from "../LoadingComponent/Loading";
 import { resetCart } from "../../redux/slices/cartSlice";
+import { useQuery } from "@tanstack/react-query";
+import { convertPrice } from "../../utils/utils";
 const { Search } = Input;
 
 const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
@@ -36,6 +41,20 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
   const [userName, setUserName] = useState("");
   const [userAvatar, setUserAvatar] = useState("");
   const [search, setSearch] = useState("");
+
+  const { data: searchResults, isPending: isSearching } = useQuery({
+    queryKey: ['searchProducts', search],
+    queryFn: () => {
+      if (!search.trim()) return { data: [] };
+      return ProductService.getProductsPaginated({
+        page: 1,
+        limit: 6,
+        name: search
+      });
+    },
+    enabled: !!search.trim(),
+    staleTime: 1000 * 60 , //1 phút
+  });
 
   const handleNavigateLogin = () => {
     navigate("/sign-in");
@@ -138,6 +157,34 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
     setSearch(value);
   };
 
+  const handleSelectProduct = (productId) => {
+    setSearch('');
+    navigate(`/product-details/${productId}`);
+  };
+
+  const renderSearchOptions = () => {
+    if (!searchResults?.data || searchResults.data.length === 0) {
+      return [];
+    }
+
+    return searchResults.data.map((product) => ({
+      value: product._id,
+      label: (
+        <WrapperSearchItem onClick={() => handleSelectProduct(product._id)}>
+          <img 
+            src={product.images[0]} 
+            alt={product.name} 
+            style={{ width: '50px', height: '80px', objectFit: 'cover' }} 
+          />
+          <WrapperSearchItemInfo>
+            <div style={{ fontWeight: 'bold' }}>{product.name}</div>
+            <div style={{ color: '#ff4d4f', fontWeight: 'bold' }}>{convertPrice(product.originalPrice)}</div>
+          </WrapperSearchItemInfo>
+        </WrapperSearchItem>
+      ),
+    }));
+  };
+
   useLayoutEffect(() => {
     // Reset giá trị tìm kiếm khi rời khỏi trang products
     if (location.pathname !== '/products') {
@@ -169,18 +216,27 @@ const HeaderComponent = ({ isHiddenSearch = false, isHiddenCart = false }) => {
                 },
               }}
             >
-              <Search
-                placeholder="Tìm kiếm theo từ khóa trong tên sách..."
-                enterButton={
-                  <div style={{ fontSize: "16px" }}>
-                    <SearchOutlined /> Tìm kiếm
-                  </div>
-                }
-                size="large"
-                onSearch={onSearch}
-                value={search}
-                onChange={handleSearchChange}
-              />
+              <AutoComplete
+                style={{ width: '100%' }}
+                options={renderSearchOptions()}
+                notFoundContent={search.trim() ? (isSearching ? "Đang tìm kiếm..." : "Không tìm thấy sản phẩm") : null}
+                popupMatchSelectWidth={false}
+                listHeight={1000}
+                onSelect={handleSelectProduct}
+              >
+                <Search
+                  placeholder="Tìm kiếm sản phẩm bạn muốn mua tại đây"
+                  enterButton={
+                    <div style={{ fontSize: "16px" }}>
+                      <SearchOutlined /> Tìm kiếm
+                    </div>
+                  }
+                  size="large"
+                  onSearch={onSearch}
+                  onChange={handleSearchChange}
+                  value={search}
+                />
+              </AutoComplete>
             </ConfigProvider>
           )}
         </Col>

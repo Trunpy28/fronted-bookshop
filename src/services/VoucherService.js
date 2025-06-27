@@ -51,6 +51,15 @@ export const getVoucherByCode = async (code) => {
   return response.data;
 };
 
+export const checkVoucher = async (code, token) => {
+  const response = await axiosJWT.get(`${API_URL}/check-voucher/${code}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
 export const updateVoucher = async (id, data, token) => {
   const formData = new FormData();
   

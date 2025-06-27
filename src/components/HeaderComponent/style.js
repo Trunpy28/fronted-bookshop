@@ -45,3 +45,23 @@ export const FieldName = styled.div`
     text-align: right;
     margin-right: 5px;
 `
+
+export const WrapperSearchItem = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    width: 100%;
+    min-width: 300px;
+    &:hover {
+        background-color: #f5f5f5;
+    }
+`
+
+export const WrapperSearchItemInfo = styled.div`
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+`

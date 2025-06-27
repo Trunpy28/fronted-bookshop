@@ -95,6 +95,7 @@ export const WrapperNameProductCart = styled.span`
   font-size: 16px;
   line-height: 1.4;
   max-width: calc(100% - 95px);
+  padding-right: 10px;
   
   &:hover {
     color: #00a551;

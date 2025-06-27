@@ -126,11 +126,12 @@ const CartPage = () => {
     isLoading: isLoadingVoucher,
     isFetching: isFetchingVoucher,
     refetch: refetchVoucher,
+    error: voucherError,
   } = useQuery({
     queryKey: ["voucher", appliedVoucherCode],
     queryFn: () => {
       if (!appliedVoucherCode) return null;
-      return VoucherService.getVoucherByCode(appliedVoucherCode);
+      return VoucherService.checkVoucher(appliedVoucherCode, user?.access_token);
     },
     enabled: !!appliedVoucherCode && !!user?.access_token,
     retry: false
@@ -745,7 +746,7 @@ const CartPage = () => {
                         )}
                       </div>
                     )}
-                    {appliedVoucherCode && !voucherData?.data && (
+                    {appliedVoucherCode && voucherError && (
                       <div
                         style={{
                           marginTop: "8px",
@@ -753,7 +754,7 @@ const CartPage = () => {
                           color: "#ff4d4f",
                         }}
                       >
-                        Mã giảm giá không hợp lệ.
+                        {voucherError?.response?.data?.message || "Mã giảm giá không hợp lệ."}
                       </div>
                     )}
                   </div>
